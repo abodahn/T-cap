@@ -11,6 +11,15 @@ def healthz():
     return jsonify(status="ok", app="t-cap")
 
 
+@bp.route("/sw.js")
+def service_worker():
+    from flask import current_app
+    resp = current_app.send_static_file("sw.js")
+    resp.headers["Cache-Control"] = "no-cache"
+    resp.headers["Service-Worker-Allowed"] = "/"
+    return resp
+
+
 @bp.route("/")
 def index():
     if current_user():

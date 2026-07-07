@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tcap-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["preview_run.py"],
+      "port": 8091
+    }
+  ]
+}

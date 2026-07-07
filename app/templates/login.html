@@ -17,10 +17,16 @@
     <div class="tc-login__card">
       <div class="tc-login__top">
         <img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" class="tc-login__mark">
-        <form method="post" action="{{ url_for('auth.set_lang', lang='ar' if lang=='en' else 'en') }}">
-          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-          <button class="tc-btn tc-btn--ghost tc-btn--sm">{{ 'العربية' if lang=='en' else 'English' }}</button>
-        </form>
+        <div class="tc-btnbar">
+          <form method="post" action="{{ url_for('auth.set_theme', theme='light' if theme=='dark' else 'dark') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button class="tc-btn tc-btn--ghost tc-btn--sm" title="{{ t('switch_theme') }}" aria-label="{{ t('switch_theme') }}">{{ '☀' if theme=='dark' else '☾' }}</button>
+          </form>
+          <form method="post" action="{{ url_for('auth.set_lang', lang='ar' if lang=='en' else 'en') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button class="tc-btn tc-btn--ghost tc-btn--sm">{{ 'العربية' if lang=='en' else 'English' }}</button>
+          </form>
+        </div>
       </div>
       <h2>{{ t('sign_in') }}</h2>
       <p class="tc-muted">{{ t('sign_in_sub') }}</p>
@@ -37,6 +43,7 @@
         </div>
         <button class="tc-btn tc-btn--primary tc-btn--block" type="submit">{{ t('sign_in') }}</button>
       </form>
+      <button type="button" data-install class="tc-btn tc-btn--ghost tc-btn--block" style="margin-top:12px">⤓&nbsp; {{ t('install_app') }}</button>
     </div>
     <p class="tc-login__foot tc-muted">© {{ year }} {{ org }} · {{ t('control_suite') }}</p>
   </div>

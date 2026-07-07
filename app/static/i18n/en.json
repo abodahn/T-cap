@@ -15,10 +15,10 @@
   "notifications": "Notifications",
   "logout": "Logout",
   "login": "Login",
-  "login_hero": "Executive Command Center",
-  "login_sub": "One console across IT service, assets and monitoring for automotive, textile and real-estate operations.",
+  "login_hero": "Command the entire operation.",
+  "login_sub": "IT service, assets and live monitoring — unified in one command center across automotive, textile and real estate. Your brand. Your data. One screen.",
   "sign_in": "Sign in",
-  "sign_in_sub": "Use your T-Group account to continue.",
+  "sign_in_sub": "One login. Every system. Sign in to take command.",
   "invalid_credentials": "Invalid username or password.",
   "username": "Username",
   "password": "Password",
@@ -250,5 +250,7 @@
   "wrong_password": "Current password is incorrect.",
   "password_too_short": "New password must be at least 8 characters.",
   "security_prefs": "Security",
-  "item_code_taken": "That item code already exists."
+  "item_code_taken": "That item code already exists.",
+  "install_app": "Install app",
+  "switch_theme": "Switch theme"
 }

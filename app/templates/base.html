@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ t('app_name') }}{% endblock %} · {{ org }}</title>
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon-192.png') }}">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+<meta name="theme-color" content="#222222">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="T-CAP">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon-192.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tc-brand.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
@@ -143,5 +149,32 @@
 {% else %}
 {% block auth_content %}{% endblock %}
 {% endif %}
+
+<script>
+/* PWA: service worker + installability (runs on every page incl. login) */
+(function(){
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); });
+  }
+  var deferred=null, installed=false;
+  function buttons(){ return [].slice.call(document.querySelectorAll('[data-install]')); }
+  window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferred=e; buttons().forEach(function(b){b.hidden=false;}); });
+  window.addEventListener('appinstalled',function(){ installed=true; deferred=null; buttons().forEach(function(b){b.hidden=true;}); });
+  function hint(msg){
+    var t=document.createElement('div'); t.className='tc-toast show';
+    t.innerHTML='<span class="tc-sevdot" style="background:var(--brand-grey)"></span><span class="tc-toast__t"><b>{{ t("install_app") }}</b><small>'+msg+'</small></span>';
+    document.body.appendChild(t); setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove();},300);},6000);
+    t.addEventListener('click',function(){t.remove();});
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-install]'); if(!b) return;
+    e.preventDefault();
+    if(deferred){ deferred.prompt(); deferred.userChoice.then(function(){ deferred=null; }); return; }
+    if(installed || matchMedia('(display-mode: standalone)').matches){ hint('Already installed.'); return; }
+    var iOS=/iP(hone|ad|od)/.test(navigator.userAgent);
+    hint(iOS ? 'Tap the Share icon, then “Add to Home Screen”.' : 'Open the browser menu and choose “Install app” / “Add to Home Screen”.');
+  });
+})();
+</script>
 </body>
 </html>
