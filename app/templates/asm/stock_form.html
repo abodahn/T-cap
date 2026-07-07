@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% set ed = (mode == 'edit') %}
+{% block title %}{{ t('edit_item') if ed else t('new_item') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>02</b> · {{ t('mod_asm') }} · {{ t('stock') }}</span>
+    <h1 class="tc-h1">{{ t('edit_item') if ed else t('new_item') }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.stock') }}">← {{ t('back') }}</a>
+</div>
+
+{% if error %}<div class="tc-alert tc-alert--danger">{{ t(error) }}</div>{% endif %}
+
+<form method="post" action="{{ url_for('asm.stock_edit', code=it['item_code']) if ed else url_for('asm.stock_new') }}" class="tc-card" style="max-width:680px"><div class="tc-card__body">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">{{ t('item_code') }}</label>
+      {% if ed %}<input class="tc-input tc-mono" value="{{ it['item_code'] }}" disabled>
+      {% else %}<input class="tc-input tc-mono" name="item_code" required autofocus placeholder="SP-XXXX">{% endif %}</div>
+    <div class="tc-field"><label class="tc-label">{{ t('name') }}</label>
+      <input class="tc-input" name="name" required value="{{ it['name'] if ed }}"></div>
+  </div>
+  <div class="tc-grid-3">
+    <div class="tc-field"><label class="tc-label">{{ t('category') }}</label>
+      <select class="tc-select" name="category">{% for c in categories %}<option {{ 'selected' if ed and it['category']==c }}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="tc-field"><label class="tc-label">{{ t('uom') }}</label>
+      <input class="tc-input" name="uom" value="{{ it['uom'] if ed else 'pcs' }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('warehouse') }}</label>
+      <select class="tc-select" name="warehouse">{% for w in warehouses %}<option {{ 'selected' if ed and it['warehouse']==w }}>{{ w }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="tc-grid-2">
+    {% if not ed %}<div class="tc-field"><label class="tc-label">{{ t('quantity') }}</label>
+      <input class="tc-input" name="quantity" type="number" min="0" value="0"></div>{% endif %}
+    <div class="tc-field"><label class="tc-label">{{ t('min_stock') }}</label>
+      <input class="tc-input" name="min_stock" type="number" min="0" value="{{ it['min_stock'] if ed else 0 }}"></div>
+  </div>
+  <div class="tc-btnbar tc-mt">
+    <button class="tc-btn tc-btn--primary" type="submit">{{ t('save') }}</button>
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.stock') }}">{{ t('cancel') }}</a>
+  </div>
+</div></form>
+{% endblock %}

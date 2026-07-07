@@ -1,0 +1,30 @@
+{% macro chip(label, kind='') -%}
+<span class="tc-chip{{ ' tc-chip--'+kind if kind }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro prio_chip(p) -%}
+  {%- set m = {'Critical':'danger','High':'warning','Medium':'','Low':''} -%}
+  {{ chip(p, m.get(p,'')) }}
+{%- endmacro %}
+
+{% macro status_chip(s) -%}
+  {%- set m = {'New':'info','Assigned':'info','In Progress':'warning','Pending':'warning',
+               'Resolved':'success','Closed':'success','Reopened':'danger'} -%}
+  {{ chip(s, m.get(s,'')) }}
+{%- endmacro %}
+
+{% macro asset_chip(s) -%}
+  {%- set m = {'Assigned':'success','In Stock':'info','Under Maintenance':'warning',
+               'Lost':'danger','Scrapped':'danger','Disposed':'danger'} -%}
+  {{ chip(s, m.get(s,'')) }}
+{%- endmacro %}
+
+{% macro ep_chip(s, t) -%}
+  {%- set m = {'online':'success','warning':'warning','offline':'danger'} -%}
+  {{ chip(t('online') if s=='online' else (t('warning') if s=='warning' else t('offline')), m.get(s,'')) }}
+{%- endmacro %}
+
+{% macro sev_chip(s) -%}
+  {%- set m = {'critical':'danger','warning':'warning','info':'info'} -%}
+  {{ chip(s, m.get(s,'')) }}
+{%- endmacro %}

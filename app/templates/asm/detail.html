@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% from "_macros.html" import asset_chip, status_chip, ep_chip, chip %}
+{% block title %}{{ a['asset_id'] }}{% endblock %}
+{% set ev_icon = {'system':'◔','custody_assign':'◎','custody_return':'↩','move':'⇄','maintenance':'🔧','edit':'✎','status':'⇆'} %}
+{% set warr_kind = {'valid':'success','expiring':'warning','expired':'danger'} %}
+{% macro act(name) %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ name }}">{% endmacro %}
+{% block content %}
+{% include "_datalists.html" %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>02</b> · {{ t('mod_asm') }} · <span class="tc-mono">{{ a['asset_id'] }}</span></span>
+    <h1 class="tc-issue__title">{{ a['name'] }}</h1>
+  </div>
+  <div class="tc-btnbar">
+    {% if can_edit %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.edit', asset_id=a['asset_id']) }}">{{ t('edit') }}</a>{% endif %}
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.label', asset_id=a['asset_id']) }}">⧉ {{ t('print_label') }}</a>
+    {% if can_delete %}<form method="post" action="{{ url_for('asm.delete', asset_id=a['asset_id']) }}" onsubmit="return confirm('{{ t('confirm_delete') }}')"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--danger">{{ t('delete') }}</button></form>{% endif %}
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.index') }}">← {{ t('back') }}</a>
+  </div>
+</div>
+
+<div class="tc-metabar">
+  {{ asset_chip(a['status']) }}<span class="tc-pill">{{ a['category'] }}</span>
+  {% if warr!='none' %}{{ chip(t('warranty_'+warr), warr_kind.get(warr,'')) }}{% endif %}
+</div>
+
+<div class="tc-issue">
+  <!-- MAIN -->
+  <div>
+    <div class="tc-section">{{ t('specifications') }}</div>
+    <dl class="tc-dl">
+      <div><dt>{{ t('brand') }} / {{ t('model') }}</dt><dd>{{ a['brand'] }} {{ a['model'] }}</dd></div>
+      <div><dt>{{ t('serial') }}</dt><dd class="tc-mono">{{ a['serial'] or '—' }}</dd></div>
+      <div><dt>{{ t('company') }}</dt><dd>{{ a['company'] or '—' }}</dd></div>
+      <div><dt>{{ t('department') }}</dt><dd>{{ a['department'] or '—' }}</dd></div>
+      <div><dt>{{ t('purchase_date') }}</dt><dd class="tc-mono">{{ a['purchase_date'] or '—' }}</dd></div>
+      <div><dt>{{ t('purchase_value') }}</dt><dd class="tc-mono">${{ '{:,.0f}'.format(a['purchase_value'] or 0) }}</dd></div>
+      <div><dt>{{ t('warranty_end') }}</dt><dd class="tc-mono">{{ a['warranty_end'] or '—' }}</dd></div>
+      <div><dt>{{ t('maintenance') }} ({{ t('cost') }})</dt><dd class="tc-mono">${{ '{:,.0f}'.format(maint_total or 0) }}</dd></div>
+    </dl>
+
+    {% if tickets or endpoint %}
+    <div class="tc-section">{{ t('related_tickets') }}{% if endpoint %} · {{ t('linked_endpoint') }}{% endif %}</div>
+    <div class="tc-stack">
+      {% for tk in tickets %}
+      <a class="tc-flex" style="justify-content:space-between;padding:8px 0;border-bottom:var(--line)" href="{{ url_for('itsm.view', ref=tk['ref']) }}">
+        <span class="tc-mono tc-faint">{{ tk['ref'] }}</span><span style="flex:1;margin:0 12px">{{ tk['subject'] }}</span>{{ status_chip(tk['status']) }}</a>
+      {% endfor %}
+      {% if endpoint %}
+      <a class="tc-flex" style="justify-content:space-between;padding:8px 0" href="{{ url_for('monitoring.view', hostname=endpoint['hostname']) }}">
+        <b class="tc-mono">{{ endpoint['hostname'] }}</b><span class="tc-faint">{{ endpoint['ip'] }}</span>{{ ep_chip(endpoint['status'], t) }}</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="tc-section" id="activity">{{ t('activity') }} <span class="c">{{ events|length }}</span></div>
+    <div class="tc-thread">
+      {% for e in events %}{% set msg = e['kind'] in ['maintenance'] %}
+      <div class="tc-tevent {{ 'tc-tevent--msg' if msg }} {{ 'tc-tevent--sys' if not msg }}">
+        <div class="tc-tevent__dot">{{ ev_icon.get(e['kind'],'•') }}</div>
+        <div>
+          <div class="tc-tevent__meta"><b>{{ e['actor'] }}</b> {{ e['summary'] }}
+            {% if e['detail'] and not msg %}<span class="tc-faint">· {{ e['detail'] }}</span>{% endif %}
+            <time>{{ e['created_at'][:16] }}</time></div>
+          {% if msg %}<div class="tc-tevent__body">{{ e['summary'] }}{% if e['cost'] %} <b>· ${{ '{:,.0f}'.format(e['cost']) }}</b>{% endif %}</div>{% endif %}
+        </div>
+      </div>
+      {% else %}<div class="tc-empty"><p>{{ t('no_records') }}</p></div>{% endfor %}
+    </div>
+  </div>
+
+  <!-- PROPERTIES RAIL -->
+  <div>
+    <dl class="tc-props">
+      <div class="tc-prop"><dt>{{ t('status') }}</dt><dd class="tc-prop__v">
+        {% if can_edit %}<form method="post" action="{{ url_for('asm.action', asset_id=a['asset_id']) }}">{{ act('status') }}
+          <select class="tc-select" name="status" onchange="this.form.submit()">
+            {% for s in statuses %}<option {{ 'selected' if s==a['status'] }}>{{ s }}</option>{% endfor %}</select></form>
+        {% else %}{{ asset_chip(a['status']) }}{% endif %}</dd></div>
+      <div class="tc-prop"><dt>{{ t('custodian') }}</dt><dd class="tc-prop__v">{{ a['custodian'] or '—' }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('site') }}</dt><dd class="tc-prop__v">{{ a['site'] or '—' }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('book_value') }}</dt><dd class="tc-prop__v tc-mono">${{ '{:,.0f}'.format(book) }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('warranty_end') }}</dt><dd class="tc-prop__v">{% if warr!='none' %}{{ chip(t('warranty_'+warr), warr_kind.get(warr,'')) }}{% else %}—{% endif %}</dd></div>
+    </dl>
+
+    {% if can_edit %}
+    <div class="tc-rail-actions">
+      <details>
+        <summary class="tc-btn tc-btn--primary tc-btn--block" style="cursor:pointer">◎ {{ t('assign_custody') }}</summary>
+        <form method="post" action="{{ url_for('asm.action', asset_id=a['asset_id']) }}" style="margin-top:10px">{{ act('custody_assign') }}
+          <input class="tc-input" name="custodian" list="dl-people" autocomplete="off" style="width:100%" value="{{ a['custodian'] or '' }}" placeholder="{{ t('custodian') }}">
+          <button class="tc-btn tc-btn--block tc-mt">◎ {{ t('assign_custody') }}</button></form>
+      </details>
+      {% if a['custodian'] %}
+      <form method="post" action="{{ url_for('asm.action', asset_id=a['asset_id']) }}">{{ act('custody_return') }}
+        <button class="tc-btn tc-btn--block">↩ {{ t('return_custody') }}</button></form>
+      {% endif %}
+      <details>
+        <summary class="tc-btn tc-btn--block" style="cursor:pointer">⇄ {{ t('move_asset') }}</summary>
+        <form method="post" action="{{ url_for('asm.action', asset_id=a['asset_id']) }}" style="margin-top:10px">{{ act('move') }}
+          <select class="tc-select" name="site" style="width:100%">{% for s in sites %}<option {{ 'selected' if s==a['site'] }}>{{ s }}</option>{% endfor %}</select>
+          <button class="tc-btn tc-btn--block tc-mt">⇄ {{ t('move_asset') }}</button></form>
+      </details>
+      <details>
+        <summary class="tc-btn tc-btn--block" style="cursor:pointer">🔧 {{ t('log_maintenance') }}</summary>
+        <form method="post" action="{{ url_for('asm.action', asset_id=a['asset_id']) }}" style="margin-top:10px">{{ act('maintenance') }}
+          <div class="tc-field"><label class="tc-label">{{ t('summary') }}</label><input class="tc-input" name="summary" required></div>
+          <div class="tc-field"><label class="tc-label">{{ t('cost') }} ($)</label><input class="tc-input" name="cost" type="number" min="0" step="1" value="0"></div>
+          <label class="tc-flex" style="gap:8px;font-size:13px;margin-bottom:10px"><input type="checkbox" name="set_status" value="1"> {{ t('set_under_maintenance') }}</label>
+          <button class="tc-btn tc-btn--block">🔧 {{ t('log_maintenance') }}</button></form>
+      </details>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

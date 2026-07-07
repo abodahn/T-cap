@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ t('enroll_device') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>03</b> · {{ t('mod_monitoring') }}</span>
+    <h1 class="tc-h1">{{ t('enroll_device') }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--ghost" href="{{ url_for('monitoring.index') }}">← {{ t('back') }}</a>
+</div>
+
+{% if error %}<div class="tc-alert tc-alert--danger">{{ t(error) }}</div>{% endif %}
+
+<div class="tc-issue">
+  <form method="post" class="tc-card"><div class="tc-card__body">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="tc-grid-2">
+      <div class="tc-field"><label class="tc-label">{{ t('hostname') }}</label><input class="tc-input tc-mono" name="hostname" required autofocus placeholder="HQ-WS-42"></div>
+      <div class="tc-field"><label class="tc-label">IP</label><input class="tc-input tc-mono" name="ip" placeholder="10.0.0.42"></div>
+    </div>
+    <div class="tc-grid-3">
+      <div class="tc-field"><label class="tc-label">{{ t('os') }}</label>
+        <select class="tc-select" name="os"><option>Windows 11</option><option>Windows 10</option><option>Windows Server 2022</option></select></div>
+      <div class="tc-field"><label class="tc-label">{{ t('site') }}</label>
+        <select class="tc-select" name="site">{% for s in sites %}<option>{{ s }}</option>{% endfor %}</select></div>
+      <div class="tc-field"><label class="tc-label">{{ t('department') }}</label><input class="tc-input" name="department" list="dl-departments" autocomplete="off" value="IT"></div>
+      {% include "_datalists.html" %}
+    </div>
+    <div class="tc-field"><label class="tc-label">{{ t('linked_asset') }}</label>
+      <select class="tc-select" name="asset_ref"><option value="">{{ t('none') }}</option>
+        {% for a in assets %}<option value="{{ a['asset_id'] }}">{{ a['asset_id'] }} · {{ a['name'] }}</option>{% endfor %}</select></div>
+    <div class="tc-btnbar tc-mt">
+      <button class="tc-btn tc-btn--primary" type="submit">{{ t('enroll_device') }}</button>
+      <a class="tc-btn tc-btn--ghost" href="{{ url_for('monitoring.index') }}">{{ t('cancel') }}</a>
+    </div>
+  </div></form>
+
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('how_it_works') }}</h3></div>
+    <div class="tc-card__body">
+      <p class="tc-muted" style="font-size:13px">{{ t('enroll_help') }}</p>
+      <div class="tc-section" style="margin-top:12px">{{ t('ingestion_api') }}</div>
+      <pre style="background:var(--bg-sunken);border:var(--line);border-radius:var(--radius-md);padding:12px;overflow:auto;font-size:12px;font-family:var(--font-mono)">POST /api/agent/metrics
+X-Agent-Token: &lt;token&gt;
+{
+  "hostname": "HQ-WS-42",
+  "cpu": 42, "ram": 61, "disk": 78,
+  "uptime_h": 120, "agent_ver": "1.4.0"
+}</pre>
+      <p class="tc-faint" style="font-size:12px">{{ t('token_once') }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

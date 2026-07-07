@@ -1,0 +1,3 @@
+# psutil gives accurate CPU/RAM/disk/uptime. The agent still runs without it
+# (Windows stdlib fallback), but psutil is strongly recommended.
+psutil>=5.9

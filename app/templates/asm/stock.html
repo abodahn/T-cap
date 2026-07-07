@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}{{ t('stock') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>02</b> · {{ t('mod_asm') }}</span>
+    <h1 class="tc-h1">{{ t('stock') }}</h1>
+  </div>
+  <div class="tc-btnbar">
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.index') }}">← {{ t('assets') }}</a>
+    {% if user_can('asm_create') %}<a class="tc-btn tc-btn--primary" href="{{ url_for('asm.stock_new') }}">＋ {{ t('new_item') }}</a>{% endif %}
+  </div>
+</div>
+<div class="tc-table-wrap">
+  <table class="tc-table">
+    <thead><tr><th>{{ t('item_code') }}</th><th>{{ t('name') }}</th><th>{{ t('category') }}</th><th>{{ t('warehouse') }}</th><th class="tc-right">{{ t('quantity') }}</th><th class="tc-right">{{ t('min_stock') }}</th><th>{{ t('status') }}</th>{% if user_can('asm_edit') %}<th>{{ t('adjust_stock') }}</th>{% endif %}</tr></thead>
+    <tbody>
+      {% for i in items %}
+      <tr>
+        <td class="tc-mono">{{ i['item_code'] }}</td><td>{{ i['name'] }}</td><td>{{ i['category'] }}</td>
+        <td class="tc-faint">{{ i['warehouse'] }}</td>
+        <td class="tc-right tc-mono">{{ i['quantity'] }} {{ i['uom'] }}</td>
+        <td class="tc-right tc-mono">{{ i['min_stock'] }}</td>
+        <td>{% if i['quantity'] <= i['min_stock'] %}{{ chip(t('low_stock'), 'danger') }}{% else %}{{ chip('OK', 'success') }}{% endif %}</td>
+        {% if user_can('asm_edit') %}
+        <td>
+          <div class="tc-flex" style="gap:6px">
+            <form method="post" action="{{ url_for('asm.stock_adjust', code=i['item_code']) }}" class="tc-flex" style="gap:4px">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input class="tc-input tc-mono" name="delta" type="number" value="1" style="width:64px;padding:5px 8px" aria-label="{{ t('movement') }}">
+              <button class="tc-btn tc-btn--sm" title="{{ t('receive') }}">{{ t('apply') }}</button>
+            </form>
+            <a class="tc-btn tc-btn--sm tc-btn--ghost" href="{{ url_for('asm.stock_edit', code=i['item_code']) }}">{{ t('edit') }}</a>
+          </div>
+        </td>
+        {% endif %}
+      </tr>
+      {% else %}<tr><td colspan="8"><div class="tc-empty"><p>{{ t('no_records') }}</p></div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="tc-faint" style="font-size:12px;margin-top:10px">{{ t('receive') }} / {{ t('issue') }}: {{ t('adjust_stock') }} — {{ t('movement') }} (+/−)</p>
+{% endblock %}

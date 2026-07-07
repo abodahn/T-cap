@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ep_chip, sev_chip %}
+{% block title %}{{ t('mod_monitoring') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>03</b> · {{ t('mod_monitoring') }}</span>
+    <h1 class="tc-h1">{{ t('endpoints') }}</h1>
+  </div>
+  {% if user_can('mon_manage') %}
+  <div class="tc-btnbar">
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('monitoring.rules') }}">{{ t('alert_rules') }}</a>
+    <a class="tc-btn tc-btn--primary" href="{{ url_for('monitoring.enroll') }}">＋ {{ t('enroll_device') }}</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="tc-grid-3" style="margin-bottom:var(--space-5)">
+  <div class="tc-card"><div class="tc-card__body" style="text-align:center">
+    {{ gauge(stats.health, size=150, color='#F5F5F2', label=t('health_score')) }}
+  </div></div>
+  <div class="tc-card"><div class="tc-card__body">
+    <div class="tc-chart-row">
+      {{ donut([(t('online'), stats.online, 'var(--status-success)'), (t('warning'), stats.warning, 'var(--status-warning)'), (t('offline'), stats.offline, 'var(--status-danger)')], size=150, center_label=stats.total, center_sub=t('endpoints')) }}
+      <div class="tc-chart-legend">
+        <div><span class="dot" style="background:var(--status-success)"></span>{{ t('online') }}<b>{{ stats.online }}</b></div>
+        <div><span class="dot" style="background:var(--status-warning)"></span>{{ t('warning') }}<b>{{ stats.warning }}</b></div>
+        <div><span class="dot" style="background:var(--status-danger)"></span>{{ t('offline') }}<b>{{ stats.offline }}</b></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('alerts') }} · {{ t('severity') }}</h3></div>
+    <div class="tc-card__body">
+      {{ hbars([('Critical', sev.critical, 'var(--status-danger)'), ('Warning', sev.warning, 'var(--status-warning)'), ('Info', sev.info, 'var(--status-info)')]) }}
+    </div>
+  </div>
+</div>
+
+<div class="tc-grid-2">
+  <div class="tc-table-wrap">
+    <table class="tc-table">
+      <thead><tr><th>{{ t('hostname') }}</th><th>{{ t('site') }}</th><th>{{ t('cpu') }}</th><th>{{ t('ram') }}</th><th>{{ t('disk') }}</th><th>{{ t('status') }}</th></tr></thead>
+      <tbody>
+        {% for e in endpoints %}
+        <tr onclick="location='{{ url_for('monitoring.view', hostname=e['hostname']) }}'" style="cursor:pointer">
+          <td class="tc-mono">{{ e['hostname'] }}</td><td class="tc-faint">{{ e['site'] }}</td>
+          {% for v in [e['cpu'], e['ram'], e['disk']] %}
+          <td style="min-width:70px"><div class="tc-meter"><span class="{{ 'crit' if v>=85 else 'warn' if v>=70 else 'ok' }}" style="width:{{ v }}%"></span></div><small class="tc-faint">{{ v }}%</small></td>
+          {% endfor %}
+          <td>{{ ep_chip(e['status'], t) }}</td>
+        </tr>
+        {% else %}<tr><td colspan="6" class="tc-muted">{{ t('no_records') }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('alerts') }}</h3></div>
+    <div class="tc-card__body" style="display:flex;flex-direction:column;gap:12px">
+      {% for a in alerts %}
+      <div style="border:var(--line);border-radius:var(--radius-md);padding:12px">
+        <div class="tc-flex" style="justify-content:space-between">{{ sev_chip(a['severity']) }}<small class="tc-faint tc-mono">{{ a['endpoint'] }}</small></div>
+        <div style="margin:8px 0">{{ a['message'] }}</div>
+        <div class="tc-btnbar" style="margin-top:8px">
+          {% if a['ticket_ref'] %}
+            <a class="tc-btn tc-btn--ghost tc-btn--sm" href="{{ url_for('itsm.view', ref=a['ticket_ref']) }}">{{ a['ticket_ref'] }}</a>
+          {% elif user_can('mon_manage') and a['status']=='open' %}
+            <form method="post" action="{{ url_for('monitoring.alert_to_ticket', alert_id=a['id']) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm">→ {{ t('convert_to_ticket') }}</button></form>
+            <form method="post" action="{{ url_for('monitoring.alert_action', alert_id=a['id'], act='acknowledged') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm tc-btn--ghost">{{ t('acknowledge') }}</button></form>
+            <form method="post" action="{{ url_for('monitoring.alert_action', alert_id=a['id'], act='resolved') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm tc-btn--ghost">{{ t('resolve') }}</button></form>
+          {% elif a['status']!='open' %}
+            <span class="tc-pill">{{ a['status'] }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}<div class="tc-muted">{{ t('all_read') }}</div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

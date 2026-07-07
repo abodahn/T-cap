@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev_chip %}
+{% block title %}{{ t('notifications') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>◆</b> · {{ org }}</span>
+    <h1 class="tc-h1">{{ t('notifications') }}</h1>
+  </div>
+  {% if items %}
+  <form method="post" action="{{ url_for('main.notifications_read') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button class="tc-btn tc-btn--ghost">{{ t('mark_all_read') }}</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="tc-card"><div class="tc-card__body" style="padding:0">
+  {% for n in items %}
+  <a class="tc-flex" style="justify-content:space-between;gap:12px;padding:12px var(--space-5);border-bottom:var(--line);{{ 'opacity:.55' if n['is_read'] }}" href="{{ n['link'] or '#' }}">
+    <div class="tc-flex" style="gap:10px;min-width:0">{{ sev_chip(n['severity']) }}
+      <span style="min-width:0"><b>{{ n['title'] }}</b><div class="tc-faint" style="font-size:13px">{{ n['message'] }}</div></span></div>
+    <small class="tc-faint tc-mono" style="white-space:nowrap">{{ n['created_at'][:16] }}</small>
+  </a>
+  {% else %}<div class="tc-empty"><img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt=""><p>{{ t('all_read') }}</p></div>{% endfor %}
+</div></div>
+{% endblock %}

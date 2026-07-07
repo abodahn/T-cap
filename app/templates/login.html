@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ t('login') }}{% endblock %}
+{% block auth_content %}
+<div class="tc-login">
+  <div class="tc-login__brand tc-hero">
+    <img src="{{ url_for('static', filename='img/logo-lockup-white.png') }}" alt="{{ org }}" class="tc-login__logo">
+    <div class="tc-eyebrow" style="margin-top:28px">{{ t('app_name') }}</div>
+    <h1>{{ t('login_hero') }}</h1>
+    <p>{{ t('login_sub') }}</p>
+    <div class="tc-login__mods">
+      <span><b>01</b> {{ t('mod_itsm') }}</span>
+      <span><b>02</b> {{ t('mod_asm') }}</span>
+      <span><b>03</b> {{ t('mod_monitoring') }}</span>
+    </div>
+  </div>
+  <div class="tc-login__form">
+    <div class="tc-login__card">
+      <div class="tc-login__top">
+        <img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" class="tc-login__mark">
+        <form method="post" action="{{ url_for('auth.set_lang', lang='ar' if lang=='en' else 'en') }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="tc-btn tc-btn--ghost tc-btn--sm">{{ 'العربية' if lang=='en' else 'English' }}</button>
+        </form>
+      </div>
+      <h2>{{ t('sign_in') }}</h2>
+      <p class="tc-muted">{{ t('sign_in_sub') }}</p>
+      {% if error %}<div class="tc-alert tc-alert--danger">{{ t('invalid_credentials') }}</div>{% endif %}
+      <form method="post" action="{{ url_for('auth.login', next=request.args.get('next','')) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="tc-field">
+          <label class="tc-label" for="u">{{ t('username') }}</label>
+          <input class="tc-input" id="u" name="username" autofocus autocomplete="username" required>
+        </div>
+        <div class="tc-field">
+          <label class="tc-label" for="p">{{ t('password') }}</label>
+          <input class="tc-input" id="p" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="tc-btn tc-btn--primary tc-btn--block" type="submit">{{ t('sign_in') }}</button>
+      </form>
+    </div>
+    <p class="tc-login__foot tc-muted">© {{ year }} {{ org }} · {{ t('control_suite') }}</p>
+  </div>
+</div>
+{% endblock %}

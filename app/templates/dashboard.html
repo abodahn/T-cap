@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import prio_chip, status_chip, sev_chip %}
+{% block title %}{{ t('mod_dashboard') }}{% endblock %}
+{% block content %}
+
+<section class="tc-hero" style="margin-bottom:var(--space-6);display:grid;grid-template-columns:1.5fr 1fr;gap:var(--space-6);align-items:center">
+  <div>
+    <div class="tc-eyebrow">{{ org }} · {{ t('app_name') }}</div>
+    <h1 style="color:#fff;font-size:clamp(24px,3.5vw,40px);margin:8px 0">{{ t('welcome') }}, {{ user['full_name'].split(' ')[0] }}</h1>
+    <p style="color:var(--brand-silver);margin:0 0 14px;max-width:46ch">{{ t('login_sub') }}</p>
+    <div class="tc-eyebrow" style="color:var(--brand-silver)">{{ t('recent_tickets') }} · 7d</div>
+    {{ sparkline(per_day, color='#C9CACA') }}
+  </div>
+  <a href="{{ url_for('main.reports') }}" class="tc-hero--link" style="text-align:center;display:block">
+    {{ gauge(kpis.health, color='#F5F5F2', label=t('operational_health')) }}
+  </a>
+</section>
+
+<div class="tc-kpi-grid" style="margin-bottom:var(--space-6)">
+  <a class="tc-kpi" href="{{ url_for('itsm.index') }}"><div class="tc-kpi__label">{{ t('open_tickets') }}</div><div class="tc-kpi__value">{{ kpis.open_tickets }}</div><div class="tc-kpi__foot tc-muted">{{ t('view_all') }} →</div></a>
+  <a class="tc-kpi" href="{{ url_for('itsm.index', scope='breached') }}"><div class="tc-kpi__label">{{ t('sla_compliance') }}</div><div class="tc-kpi__value">{{ kpis.sla }}%</div><div class="tc-kpi__foot">{% if kpis.breached %}<span class="tc-chip tc-chip--danger">{{ kpis.breached }} {{ t('breached') }}</span>{% else %}<span class="tc-chip tc-chip--success">OK</span>{% endif %}</div></a>
+  <a class="tc-kpi" href="{{ url_for('asm.index') }}"><div class="tc-kpi__label">{{ t('total_assets') }}</div><div class="tc-kpi__value">{{ kpis.total_assets }}</div><div class="tc-kpi__foot tc-muted">${{ '{:,.0f}'.format(kpis.book_value) }}</div></a>
+  <a class="tc-kpi" href="{{ url_for('monitoring.index') }}"><div class="tc-kpi__label">{{ t('endpoints') }}</div><div class="tc-kpi__value">{{ kpis.endpoints }}</div><div class="tc-kpi__foot">{% if kpis.offline %}<span class="tc-chip tc-chip--danger">{{ kpis.offline }} {{ t('offline') }}</span>{% else %}<span class="tc-chip tc-chip--success">{{ t('online') }}</span>{% endif %}</div></a>
+</div>
+
+<div class="tc-grid-3" style="margin-bottom:var(--space-6)">
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('tickets') }} · {{ t('status') }}</h3></div>
+    <div class="tc-card__body">
+      {% set ns = namespace(seg=[]) %}{% for r in status_dist %}{% set ns.seg = ns.seg + [(r['status'], r['c'], status_colors.get(r['status'],'')) ] %}{% endfor %}
+      <div class="tc-chart-row">
+        {{ donut(ns.seg, center_label=kpis.open_tickets, center_sub=t('open_tickets')) }}
+        <div class="tc-chart-legend">
+          {% for r in status_dist %}<a class="tc-legend-link" href="{{ url_for('itsm.index', status=r['status']) }}"><span class="dot" style="background:{{ status_colors.get(r['status'],'var(--brand-grey)') }}"></span>{{ r['status'] }}<b>{{ r['c'] }}</b></a>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('endpoints') }}</h3></div>
+    <div class="tc-card__body">
+      {% set ne = namespace(seg=[]) %}{% for r in ep_dist %}{% set ne.seg = ne.seg + [(r['status'], r['c'], status_colors.get(r['status'],'')) ] %}{% endfor %}
+      <div class="tc-chart-row">
+        {{ donut(ne.seg, center_label=kpis.endpoints, center_sub=t('online')) }}
+        <div class="tc-chart-legend">
+          {% for r in ep_dist %}<a class="tc-legend-link" href="{{ url_for('monitoring.index') }}"><span class="dot" style="background:{{ status_colors.get(r['status'],'var(--brand-grey)') }}"></span>{{ t(r['status']) }}<b>{{ r['c'] }}</b></a>{% endfor %}
+          <a class="tc-legend-link" href="{{ url_for('monitoring.index') }}"><span class="dot" style="background:var(--status-danger)"></span>{{ t('open_alerts') }}<b>{{ kpis.open_alerts }}</b></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('assets') }} · {{ t('category') }}</h3></div>
+    <div class="tc-card__body">
+      {% set nc = namespace(rows=[]) %}{% for r in cat_dist %}{% set nc.rows = nc.rows + [(r['category'], r['c'])] %}{% endfor %}
+      {{ hbars(nc.rows) }}
+    </div>
+  </div>
+</div>
+
+<div class="tc-grid-2">
+  <div class="tc-card">
+    <div class="tc-card__head"><h3 style="margin:0">{{ t('recent_tickets') }}</h3><a class="tc-btn tc-btn--ghost tc-btn--sm" href="{{ url_for('itsm.index') }}">{{ t('view_all') }}</a></div>
+    <div class="tc-table-wrap" style="border:0;border-radius:0">
+      <table class="tc-table">
+        <thead><tr><th>{{ t('ticket') }}</th><th>{{ t('subject') }}</th><th>{{ t('priority') }}</th><th>{{ t('status') }}</th></tr></thead>
+        <tbody>
+          {% for r in recent_tickets %}
+          <tr onclick="location='{{ url_for('itsm.view', ref=r['ref']) }}'">
+            <td><a class="tc-idlink" href="{{ url_for('itsm.view', ref=r['ref']) }}" onclick="event.stopPropagation()">{{ r['ref'] }}</a></td><td>{{ r['subject'] }}</td>
+            <td>{{ prio_chip(r['priority']) }}</td><td>{{ status_chip(r['status']) }}</td>
+          </tr>
+          {% else %}<tr><td colspan="4" class="tc-muted">{{ t('no_records') }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tc-card">
+    <div class="tc-card__head"><h3 style="margin:0">{{ t('active_alerts') }}</h3><a class="tc-btn tc-btn--ghost tc-btn--sm" href="{{ url_for('monitoring.index') }}">{{ t('view_all') }}</a></div>
+    <div class="tc-card__body tc-stack">
+      {% for a in alerts %}
+      <a class="tc-flex tc-legend-link" style="justify-content:space-between;padding:8px;margin:-4px 0" href="{{ url_for('monitoring.view', hostname=a['endpoint']) }}">
+        <div class="tc-flex">{{ sev_chip(a['severity']) }}<span>{{ a['message'] }}</span></div>
+        <small class="tc-faint tc-mono">{{ a['endpoint'] }}</small>
+      </a>
+      {% else %}<div class="tc-empty"><p>{{ t('all_read') }}</p></div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

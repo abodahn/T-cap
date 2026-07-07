@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% from "_macros.html" import prio_chip, status_chip, chip %}
+{% block title %}{{ ticket['ref'] }}{% endblock %}
+{% set sla_kind = {'Within SLA':'success','Met':'success','Warning':'warning','Breached':'danger','Paused':'info'} %}
+{% set ev_icon = {'system':'◔','assign':'◎','status':'⇄','comment':'❝','note':'🔒','worklog':'⏱','resolve':'✓','reopen':'↺','escalate':'▲'} %}
+{% set msg_kinds = ['comment','note','worklog'] %}
+{% set open = ticket['status'] not in ['Resolved','Closed','Cancelled'] %}
+{% macro act(name) %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ name }}">{% endmacro %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>01</b> · {{ t('mod_itsm') }} · <span class="tc-mono">{{ ticket['ref'] }}</span></span>
+    <h1 class="tc-issue__title">{{ ticket['subject'] }}</h1>
+  </div>
+  <div class="tc-btnbar">
+    {% if can_edit and open %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.edit', ref=ticket['ref']) }}">{{ t('edit') }}</a>{% endif %}
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.index') }}">← {{ t('back') }}</a>
+  </div>
+</div>
+
+<div class="tc-metabar">
+  {{ status_chip(ticket['status']) }}{{ prio_chip(ticket['priority']) }}
+  {% if ticket['type'] %}<span class="tc-pill">{{ ticket['type'] }}</span>{% endif %}
+  <span class="tc-pill">{{ chip(sla.status, sla_kind.get(sla.status,'')) }}</span>
+</div>
+
+<div class="tc-issue">
+  <!-- MAIN -->
+  <div>
+    <!-- SLA strip -->
+    <div class="tc-slastrip">
+      <div class="tc-slastrip__top">
+        <span class="tc-flex" style="gap:8px">{{ chip(sla.status, sla_kind.get(sla.status,'')) }}
+          <span class="tc-faint">{{ t('response') }}:
+            {% if sla.response=='met' %}<b style="color:var(--status-success)">{{ t('met') }}</b>
+            {% elif sla.response=='breached' %}<b style="color:var(--status-danger)">{{ t('breached') }}</b>
+            {% else %}{{ t('pending') }}{% endif %}</span></span>
+        <span class="tc-mono {{ 'tc-due-over' if sla.breached else 'tc-due-soon' if sla.status=='Warning' }}">
+          {% if not open %}{{ t('met') if sla.status in ['Met','Within SLA'] else sla.status }}{% elif sla.breached %}{{ t('breached') }} · {{ sla.remaining }}{% else %}{{ sla.remaining }} {{ t('left') }}{% endif %}</span>
+      </div>
+      <div class="tc-slabar"><span class="{{ 'crit' if sla.status=='Breached' else 'warn' if sla.status=='Warning' else 'ok' }}" style="width:{{ sla.percent }}%"></span></div>
+    </div>
+
+    <!-- Description -->
+    <div class="tc-desc">{{ ticket['description'] or '—' }}</div>
+
+    {% if ticket['resolution'] %}
+    <div class="tc-section">{{ t('resolution') }} <span class="c">{{ ticket['closure_category'] }}</span></div>
+    <div class="tc-desc">{{ ticket['resolution'] }}{% if ticket['root_cause'] %}
+
+{{ t('root_cause') }}: {{ ticket['root_cause'] }}{% endif %}</div>
+    {% endif %}
+
+    <!-- Activity -->
+    <div class="tc-section" id="activity">{{ t('activity') }} <span class="c">{{ events|length }}</span></div>
+    <div class="tc-thread">
+      {% for e in events %}{% set msg = e['kind'] in msg_kinds %}
+      <div class="tc-tevent {{ 'tc-tevent--msg' if msg }} {{ 'tc-tevent--internal' if e['is_internal'] }} {{ 'tc-tevent--sys' if not msg }}">
+        <div class="tc-tevent__dot">{{ ev_icon.get(e['kind'],'•') }}</div>
+        <div>
+          <div class="tc-tevent__meta"><b>{{ e['actor'] }}</b>
+            {% if msg %}{{ t('log_work') if e['kind']=='worklog' else (t('internal') if e['is_internal'] else t('add_comment')) }}{% else %}{{ e['summary'] }}{% endif %}
+            {% if e['is_internal'] %}<span class="tc-pill">{{ t('internal') }}</span>{% endif %}
+            <time>{{ e['created_at'][:16] }}</time></div>
+          {% if msg %}<div class="tc-tevent__body">{{ e['summary'] }}{% if e['detail'] %} <span class="tc-faint">· {{ e['detail'] }}</span>{% endif %}</div>
+          {% elif e['detail'] %}<div class="tc-faint" style="font-size:13px">{{ e['detail'] }}</div>{% endif %}
+        </div>
+      </div>
+      {% else %}<div class="tc-empty"><p>{{ t('no_records') }}</p></div>{% endfor %}
+    </div>
+
+    <!-- Composer -->
+    {% if can_edit %}
+    <div class="tc-composer" style="margin-top:var(--space-4)">
+      <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}">
+        {{ act('comment') }}
+        <textarea name="comment" placeholder="{{ t('add_comment') }}…" required></textarea>
+        <div class="tc-composer__bar">
+          <div class="tc-composer__seg">
+            <label><input type="radio" name="internal" value="" checked> {{ t('response') }}</label>
+            <label><input type="radio" name="internal" value="1"> 🔒 {{ t('internal') }}</label>
+          </div>
+          <button class="tc-btn tc-btn--primary tc-btn--sm">{{ t('save') }}</button>
+        </div>
+      </form>
+    </div>
+    <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}" class="tc-toolbar" style="margin-top:12px">
+      {{ act('worklog') }}
+      <span class="tc-faint" style="font-size:13px">⏱ {{ t('log_work') }}</span>
+      <input class="tc-input" name="minutes" type="number" min="1" value="15" style="width:88px" aria-label="{{ t('minutes') }}">
+      <input class="tc-input grow" name="summary" placeholder="{{ t('summary') }}">
+      <button class="tc-btn tc-btn--sm">{{ t('save') }}</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <!-- PROPERTIES RAIL -->
+  <div>
+    <dl class="tc-props">
+      <div class="tc-prop"><dt>{{ t('assigned_agent') }}</dt><dd class="tc-prop__v">
+        {% if can_edit %}
+        <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}">{{ act('assign') }}
+          <select class="tc-select" name="assigned_agent" onchange="this.form.submit()">
+            <option value="">{{ t('unassigned') }}</option>
+            {% for ag in agents %}<option {{ 'selected' if ag['full_name']==ticket['assigned_agent'] }}>{{ ag['full_name'] }}</option>{% endfor %}
+          </select></form>
+        {% else %}{{ ticket['assigned_agent'] or '—' }}{% endif %}
+      </dd></div>
+      <div class="tc-prop"><dt>{{ t('status') }}</dt><dd class="tc-prop__v">
+        {% if can_edit and open %}
+        <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}">{{ act('status') }}
+          <select class="tc-select" name="status" onchange="this.form.submit()">
+            {% for s in core.OPEN_STATUSES + core.PAUSED_STATUSES %}<option {{ 'selected' if s==ticket['status'] }}>{{ s }}</option>{% endfor %}
+          </select></form>
+        {% else %}{{ status_chip(ticket['status']) }}{% endif %}
+      </dd></div>
+      <div class="tc-prop"><dt>{{ t('priority') }}</dt><dd class="tc-prop__v">{{ prio_chip(ticket['priority']) }} <span class="tc-faint" style="font-size:12px">{{ ticket['impact'] }}×{{ ticket['urgency'] }}</span></dd></div>
+      <div class="tc-prop"><dt>{{ t('requester') }}</dt><dd class="tc-prop__v">{{ ticket['requester'] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('site') }}</dt><dd class="tc-prop__v">{{ ticket['site'] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('linked_asset') }}</dt><dd class="tc-prop__v">{% if asset %}<a href="{{ url_for('asm.view', asset_id=asset['asset_id']) }}" class="tc-mono">{{ asset['asset_id'] }}</a>{% else %}—{% endif %}</dd></div>
+      <div class="tc-prop"><dt>{{ t('time_spent') }}</dt><dd class="tc-prop__v tc-mono">{{ core.fmt_minutes(ticket['time_spent_min'] or 0) }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('created') }}</dt><dd class="tc-prop__v tc-mono tc-faint">{{ ticket['created_at'][:16] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('sla_due') }}</dt><dd class="tc-prop__v tc-mono tc-faint">{{ ticket['sla_due'][:16] if ticket['sla_due'] }}</dd></div>
+    </dl>
+
+    {% if can_edit %}
+    <div class="tc-rail-actions">
+      <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}">{{ act('assign_me') }}
+        <button class="tc-btn tc-btn--block">◎ {{ t('assign_me') }}</button></form>
+
+      {% if open %}
+      <details>
+        <summary class="tc-btn tc-btn--primary tc-btn--block" style="cursor:pointer">✓ {{ t('resolve') }}</summary>
+        <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}" style="margin-top:10px">{{ act('resolve') }}
+          <div class="tc-field"><label class="tc-label">{{ t('closure') }}</label>
+            <select class="tc-select" name="closure_category">{% for c in core.CLOSURE_CATEGORIES %}<option>{{ c }}</option>{% endfor %}</select></div>
+          <div class="tc-field"><label class="tc-label">{{ t('resolution') }}</label>
+            <textarea class="tc-textarea" name="resolution" rows="3" required></textarea></div>
+          <div class="tc-field"><label class="tc-label">{{ t('root_cause') }} <span class="tc-faint">({{ t('optional') }})</span></label>
+            <input class="tc-input" name="root_cause"></div>
+          <button class="tc-btn tc-btn--primary tc-btn--block">✓ {{ t('resolve') }}</button>
+        </form>
+      </details>
+      <details>
+        <summary class="tc-btn tc-btn--block" style="cursor:pointer">▲ {{ t('escalate') }}{% if ticket['escalation_level'] %} · L{{ ticket['escalation_level'] }}{% endif %}</summary>
+        <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}" style="margin-top:10px">{{ act('escalate') }}
+          <input class="tc-input" name="reason" placeholder="{{ t('reason') }}">
+          <button class="tc-btn tc-btn--block tc-mt">▲ {{ t('escalate') }}</button></form>
+      </details>
+      {% elif ticket['status']=='Resolved' %}
+      <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}">{{ act('close') }}
+        <button class="tc-btn tc-btn--primary tc-btn--block">✓ {{ t('close_ticket') }}</button></form>
+      <details>
+        <summary class="tc-btn tc-btn--block" style="cursor:pointer">↺ {{ t('reopen') }}</summary>
+        <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}" style="margin-top:10px">{{ act('reopen') }}
+          <input class="tc-input" name="reason" placeholder="{{ t('reason') }}">
+          <button class="tc-btn tc-btn--block tc-mt">↺ {{ t('reopen') }}</button></form>
+      </details>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

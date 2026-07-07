@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import prio_chip, status_chip, chip %}
+{% block title %}{{ t('mod_workspace') }}{% endblock %}
+{% set sla_kind = {'Within SLA':'success','Met':'success','Warning':'warning','Breached':'danger','Paused':'info'} %}
+{% set qlabel = {'my_open':t('q_my_open'),'unassigned':t('unassigned'),'breached':t('breached'),'critical':t('q_critical'),'resolved_today':t('q_resolved_today')} %}
+{% set qkind = {'breached':'danger','critical':'danger','unassigned':'warning'} %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>◆</b> · {{ t('mod_workspace') }}</span>
+    <h1 class="tc-h1">{{ me }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.index') }}">{{ t('mod_itsm') }} →</a>
+</div>
+
+{% set qlink = {'my_open':url_for('itsm.index', scope='mine'), 'unassigned':url_for('itsm.index', scope='unassigned'), 'breached':url_for('itsm.index', scope='breached'), 'critical':url_for('itsm.index', priority='Critical'), 'resolved_today':url_for('itsm.index', status='Resolved')} %}
+<div class="tc-kpi-grid" style="margin-bottom:var(--space-6)">
+  {% for key, q in queues %}
+  <a class="tc-kpi" href="{{ qlink[key] }}">
+    <div class="tc-kpi__label">{{ qlabel[key] }}</div>
+    <div class="tc-kpi__value" style="color:{{ 'var(--status-danger)' if qkind.get(key)=='danger' and q.count else 'var(--status-warning)' if qkind.get(key)=='warning' and q.count else 'inherit' }}">{{ q.count }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="tc-grid-3">
+  {% for key, q in queues %}{% if key != 'resolved_today' %}
+  <div class="tc-card">
+    <div class="tc-card__head"><h3 style="margin:0">{{ qlabel[key] }}</h3><span class="tc-pill">{{ q.count }}</span></div>
+    <div class="tc-card__body" style="padding:0">
+      {% for item in q['items'] %}{% set r = item.r %}{% set s = item.sla %}
+      <a class="tc-flex" style="justify-content:space-between;gap:10px;padding:11px var(--space-4);border-bottom:var(--line)" href="{{ url_for('itsm.view', ref=r['ref']) }}">
+        <span style="min-width:0"><span class="tc-mono tc-faint" style="font-size:12px">{{ r['ref'] }}</span><br>{{ r['subject'][:42] }}</span>
+        <span style="text-align:end;white-space:nowrap">{{ prio_chip(r['priority']) }}<br><small class="tc-mono {{ 'tc-due-over' if s.breached else 'tc-faint' }}" style="font-size:11px">{{ s.remaining }}</small></span>
+      </a>
+      {% else %}<div class="tc-empty" style="padding:var(--space-6)"><p>{{ t('all_read') }}</p></div>{% endfor %}
+    </div>
+  </div>
+  {% endif %}{% endfor %}
+</div>
+{% endblock %}

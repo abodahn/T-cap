@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ t('alert_rules') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>03</b> · {{ t('mod_monitoring') }}</span>
+    <h1 class="tc-h1">{{ t('alert_rules') }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--ghost" href="{{ url_for('monitoring.index') }}">← {{ t('back') }}</a>
+</div>
+
+<p class="tc-muted" style="font-size:13px;margin-bottom:16px">{{ t('rules_help') }}</p>
+
+<form method="post" action="{{ url_for('monitoring.rules') }}">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="tc-table-wrap" style="max-width:640px">
+    <table class="tc-table">
+      <thead><tr><th>{{ t('metric') }}</th><th>{{ t('warning') }} ≥</th><th>{{ t('critical') }} ≥</th><th>{{ t('enabled') }}</th></tr></thead>
+      <tbody>
+        {% for r in rules %}
+        <tr>
+          <td><b>{{ r['label'] }}</b></td>
+          <td><input class="tc-input tc-mono" name="warn_{{ r['id'] }}" type="number" min="0" max="100" value="{{ r['warn']|int }}" style="width:90px"></td>
+          <td><input class="tc-input tc-mono" name="crit_{{ r['id'] }}" type="number" min="0" max="100" value="{{ r['crit']|int }}" style="width:90px"></td>
+          <td><input type="checkbox" name="enabled_{{ r['id'] }}" value="1" {{ 'checked' if r['enabled'] }} style="width:16px;height:16px;accent-color:var(--brand-grey)"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tc-btnbar tc-mt"><button class="tc-btn tc-btn--primary" type="submit">{{ t('save_changes') }}</button></div>
+</form>
+{% endblock %}

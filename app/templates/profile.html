@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ t('my_profile') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>◆</b> · {{ org }} · {{ t('control_suite') }}</span>
+    <h1 class="tc-h1">{{ t('my_profile') }}</h1>
+  </div>
+</div>
+
+<div class="tc-grid-2">
+  <div class="tc-card"><div class="tc-card__body">
+    <div class="tc-flex" style="gap:16px;margin-bottom:20px">
+      <span class="tc-avatar" style="width:64px;height:64px;font-size:26px">{{ u['full_name'][:1] }}</span>
+      <div><h2 style="margin:0">{{ u['full_name'] }}</h2><span class="tc-pill">{{ t('role_'+u['role']) }}</span></div>
+    </div>
+    <dl class="tc-dl">
+      <div><dt>{{ t('username') }}</dt><dd class="tc-mono">{{ u['username'] }}</dd></div>
+      <div><dt>{{ t('email') }}</dt><dd>{{ u['email'] }}</dd></div>
+      <div><dt>{{ t('department') }}</dt><dd>{{ u['department'] }}</dd></div>
+      <div><dt>{{ t('site') }}</dt><dd>{{ u['site'] }}</dd></div>
+      <div><dt>{{ t('member_since') }}</dt><dd class="tc-mono">{{ u['created_at'][:10] }}</dd></div>
+    </dl>
+  </div></div>
+
+  <div class="tc-stack">
+    <div class="tc-kpi-grid">
+      <div class="tc-kpi"><div class="tc-kpi__label">{{ t('tickets') }}</div><div class="tc-kpi__value">{{ stats.tickets }}</div></div>
+      <div class="tc-kpi"><div class="tc-kpi__label">{{ t('activity') }}</div><div class="tc-kpi__value">{{ stats.actions }}</div></div>
+    </div>
+
+    <div class="tc-card"><div class="tc-card__head"><h3>{{ t('security_prefs') }}</h3></div>
+      <div class="tc-card__body">
+        <form method="post" action="{{ url_for('main.profile') }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <div class="tc-field"><label class="tc-label">{{ t('current_password') }}</label>
+            <input class="tc-input" type="password" name="current_password" autocomplete="current-password" required></div>
+          <div class="tc-field"><label class="tc-label">{{ t('new_password') }}</label>
+            <input class="tc-input" type="password" name="new_password" autocomplete="new-password" minlength="8" required></div>
+          <button class="tc-btn tc-btn--primary">{{ t('change_password') }}</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="tc-card"><div class="tc-card__head"><h3>{{ t('preferences') }}</h3></div>
+      <div class="tc-card__body tc-stack">
+        <div class="tc-flex" style="justify-content:space-between">
+          <span>{{ t('language') }}</span>
+          <div class="tc-btnbar">
+            <form method="post" action="{{ url_for('auth.set_lang', lang='en') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm {{ 'tc-btn--primary' if lang=='en' }}">English</button></form>
+            <form method="post" action="{{ url_for('auth.set_lang', lang='ar') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm {{ 'tc-btn--primary' if lang=='ar' }}">العربية</button></form>
+          </div>
+        </div>
+        <hr class="tc-sep">
+        <div class="tc-flex" style="justify-content:space-between">
+          <span>{{ t('theme') }}</span>
+          <div class="tc-btnbar">
+            <form method="post" action="{{ url_for('auth.set_theme', theme='dark') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm {{ 'tc-btn--primary' if theme=='dark' }}">☾ Dark</button></form>
+            <form method="post" action="{{ url_for('auth.set_theme', theme='light') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm {{ 'tc-btn--primary' if theme=='light' }}">☀ Light</button></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

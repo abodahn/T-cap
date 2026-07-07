@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import asset_chip %}
+{% block title %}{{ t('mod_asm') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>02</b> · {{ t('mod_asm') }}</span>
+    <h1 class="tc-h1">{{ t('assets') }}</h1>
+  </div>
+  <div class="tc-btnbar">
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.export_xlsx', status=f_status, category=f_cat, q=q) }}">⭳ Excel</a>
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.stock') }}">{{ t('stock') }}</a>
+    {% if user_can('asm_create') %}<a class="tc-btn tc-btn--primary" href="{{ url_for('asm.new') }}">＋ {{ t('new_asset') }}</a>{% endif %}
+  </div>
+</div>
+
+<div class="tc-toolbar">
+  <div class="tc-seg">
+    <a class="{{ 'on' if not f_status }}" href="{{ url_for('asm.index') }}">{{ t('all_statuses') }} <span class="n">{{ counts[''] }}</span></a>
+    {% for s, c in counts.items() if s %}
+    <a class="{{ 'on' if s==f_status }}" href="{{ url_for('asm.index', status=s) }}">{{ s }} <span class="n">{{ c }}</span></a>
+    {% endfor %}
+  </div>
+  <form method="get" class="tc-toolbar" style="margin:0;gap:8px">
+    {% if f_status %}<input type="hidden" name="status" value="{{ f_status }}">{% endif %}
+    <input class="tc-input grow" name="q" value="{{ q }}" placeholder="{{ t('search_ph') }}">
+    <select class="tc-select" name="category" onchange="this.form.submit()">
+      <option value="">{{ t('category') }}</option>
+      {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c==f_cat }}>{{ c }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="tc-table-wrap">
+  <table class="tc-table">
+    <thead><tr><th>{{ t('asset') }}</th><th>{{ t('name') }}</th><th>{{ t('category') }}</th><th>{{ t('site') }}</th><th>{{ t('custodian') }}</th><th>{{ t('status') }}</th></tr></thead>
+    <tbody>
+      {% for a in assets %}
+      <tr onclick="location='{{ url_for('asm.view', asset_id=a['asset_id']) }}'">
+        <td><a class="tc-idlink" href="{{ url_for('asm.view', asset_id=a['asset_id']) }}" onclick="event.stopPropagation()">{{ a['asset_id'] }}</a></td><td>{{ a['name'] }}</td><td>{{ a['category'] }}</td>
+        <td class="tc-faint">{{ a['site'] }}</td><td>{{ a['custodian'] or '—' }}</td><td>{{ asset_chip(a['status']) }}</td>
+      </tr>
+      {% else %}<tr><td colspan="6"><div class="tc-empty"><img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt=""><p>{{ t('no_records') }}</p></div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

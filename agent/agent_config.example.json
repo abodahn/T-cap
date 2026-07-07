@@ -1,0 +1,7 @@
+{
+  "server_url": "http://127.0.0.1:8080",
+  "hostname": "HQ-WS-42",
+  "token": "PASTE-THE-ENROLLMENT-TOKEN-HERE",
+  "interval_seconds": 30,
+  "disk_path": "C:\\"
+}

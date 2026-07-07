@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ep_chip, sev_chip, chip %}
+{% block title %}{{ e['hostname'] }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>03</b> · {{ t('mod_monitoring') }} · {{ e['ip'] }}</span>
+    <h1 class="tc-h1 tc-h1--mono">{{ e['hostname'] }}</h1>
+  </div>
+  <div class="tc-btnbar">
+    {% if can_manage %}
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('monitoring.edit', hostname=e['hostname']) }}">{{ t('edit') }}</a>
+    <form method="post" action="{{ url_for('monitoring.delete', hostname=e['hostname']) }}" onsubmit="return confirm('{{ t('confirm_delete') }}')"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--danger">{{ t('decommission') }}</button></form>
+    {% endif %}
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('monitoring.index') }}">← {{ t('back') }}</a>
+  </div>
+</div>
+
+<div class="tc-metabar">
+  {{ ep_chip(e['status'], t) }}
+  {% if e['maintenance'] %}{{ chip(t('maintenance'), 'info') }}{% endif %}
+  {% if e['api_token_hash'] %}{{ chip(t('enrolled'), 'success') }}{% else %}<span class="tc-pill">{{ t('seeded') }}</span>{% endif %}
+  <span class="tc-pill">{{ e['os'] }}</span>
+</div>
+
+<div class="tc-issue">
+  <div>
+    <div class="tc-section">{{ t('metrics') }}</div>
+    {% for lbl, v in [(t('cpu'), e['cpu']), (t('ram'), e['ram']), (t('disk'), e['disk'])] %}
+    <div class="tc-metric-row"><span>{{ lbl }}</span>
+      <div class="tc-meter"><span class="{{ 'crit' if v>=85 else 'warn' if v>=70 else 'ok' }}" style="width:{{ v }}%"></span></div>
+      <b class="tc-right tc-mono">{{ v }}%</b></div>
+    {% endfor %}
+
+    <div class="tc-section" id="activity">{{ t('alerts') }} <span class="c">{{ alerts|length }}</span></div>
+    <div class="tc-stack">
+      {% for a in alerts %}
+      <div style="border:var(--line);border-radius:var(--radius-md);padding:12px">
+        <div class="tc-flex" style="justify-content:space-between">{{ sev_chip(a['severity']) }}
+          <small class="tc-faint tc-mono">{{ a['created_at'][:16] }}</small></div>
+        <div style="margin:8px 0">{{ a['message'] }}</div>
+        <div class="tc-btnbar">
+          {% if a['ticket_ref'] %}<a class="tc-btn tc-btn--ghost tc-btn--sm" href="{{ url_for('itsm.view', ref=a['ticket_ref']) }}">{{ a['ticket_ref'] }}</a>
+          {% elif can_manage and a['status']=='open' %}
+            <form method="post" action="{{ url_for('monitoring.alert_to_ticket', alert_id=a['id']) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm">→ {{ t('convert_to_ticket') }}</button></form>
+            <form method="post" action="{{ url_for('monitoring.alert_action', alert_id=a['id'], act='acknowledged') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm tc-btn--ghost">{{ t('acknowledge') }}</button></form>
+            <form method="post" action="{{ url_for('monitoring.alert_action', alert_id=a['id'], act='resolved') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm tc-btn--ghost">{{ t('resolve') }}</button></form>
+          {% else %}<span class="tc-pill">{{ a['status'] }}</span>{% endif %}
+        </div>
+      </div>
+      {% else %}<div class="tc-empty"><p>{{ t('all_read') }}</p></div>{% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <dl class="tc-props">
+      <div class="tc-prop"><dt>{{ t('status') }}</dt><dd class="tc-prop__v">{{ ep_chip(e['status'], t) }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('site') }}</dt><dd class="tc-prop__v">{{ e['site'] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('department') }}</dt><dd class="tc-prop__v">{{ e['department'] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('uptime') }}</dt><dd class="tc-prop__v tc-mono">{{ e['uptime_h'] }}h</dd></div>
+      <div class="tc-prop"><dt>{{ t('agent') }}</dt><dd class="tc-prop__v tc-mono">v{{ e['agent_ver'] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('last_seen') }}</dt><dd class="tc-prop__v tc-mono tc-faint">{{ e['last_seen'][:16] if e['last_seen'] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('linked_asset') }}</dt><dd class="tc-prop__v">{% if asset %}<a class="tc-mono" href="{{ url_for('asm.view', asset_id=asset['asset_id']) }}">{{ asset['asset_id'] }}</a>{% else %}—{% endif %}</dd></div>
+    </dl>
+    {% if can_manage %}
+    <div class="tc-rail-actions">
+      <form method="post" action="{{ url_for('monitoring.toggle_maint', hostname=e['hostname']) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-btn tc-btn--block">{{ t('exit_maintenance') if e['maintenance'] else t('enter_maintenance') }}</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,351 @@
+/* ==========================================================================
+   T-GROUP ENTERPRISE CONTROL SUITE — MONOCHROME BRAND SYSTEM
+   Single source of truth for the premium corporate monochrome identity.
+   Default = premium dark corporate. Color is reserved for status/severity only.
+   Import this ONE file in every module, then use the --brand-* tokens + .tc-*
+   primitives. Do not hardcode brand colors anywhere else.
+   ========================================================================== */
+
+:root {
+  /* ---- Monochrome core — EXACT values sampled from T-GROUP brand manual -- */
+  --brand-black:      #262626;
+  --brand-graphite:   #2E2E2E;
+  --brand-charcoal:   #3C3C3C; /* the logo ink — primary brand tone         */
+  --brand-slate:      #4A4A4A;
+  --brand-steel:      #5F5F5F;
+  --brand-grey:       #7E8080; /* signature brand grey (most-used in manual) */
+  --brand-mid-grey:   #898989;
+  --brand-silver:     #9F9FA0;
+  --brand-light-grey: #C9CACA;
+  --brand-offwhite:   #F5F5F2;
+  --brand-white:      #FFFFFF;
+
+  /* ---- Status / severity (the ONLY saturated colors allowed) ------------ */
+  /* Slightly desaturated to sit quietly inside a monochrome executive UI.   */
+  --status-success: #3F9E6A;
+  --status-warning: #C98A2E;
+  --status-danger:  #C2483C;
+  --status-info:    #4A78B0;
+  --status-neutral: var(--brand-grey);
+
+  /* ---- Semantic surface tokens — DARK (default, premium corporate) ------ */
+  /* True charcoal, matching the brand's dark treatment — never pure black.  */
+  --bg:          #222222; /* app background — brand charcoal                 */
+  --bg-sunken:   #1B1B1B; /* wells, code, table stripes                      */
+  --surface:     #2A2A2A; /* cards / panels                                  */
+  --surface-2:   #333333; /* raised / hover                                  */
+  --surface-3:   #3C3C3C; /* popovers, active nav = logo tone                */
+  --sidebar-bg:  #1B1B1B;
+
+  --text:        #F5F5F2; /* primary text                                    */
+  --text-muted:  #C9CACA; /* secondary                                       */
+  --text-faint:  #898989; /* tertiary / captions = brand mid-grey           */
+  --text-inverse:#222222;
+
+  --accent:      #F5F5F2; /* interactive/selection = white in monochrome     */
+  --accent-weak: rgba(245,245,242,.10);
+
+  /* ---- Lines & dividers (thin, low-contrast — a signature of the system) */
+  --line:        1px solid rgba(255,255,255,.12);
+  --line-strong: 1px solid rgba(255,255,255,.22);
+  --line-color:  rgba(255,255,255,.12);
+  --hairline:    rgba(255,255,255,.08);
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---- Elevation -------------------------------------------------------- */
+  --shadow-soft: 0 18px 50px rgba(0,0,0,.45);
+  --shadow-card: 0 1px 0 rgba(255,255,255,.03), 0 12px 30px rgba(0,0,0,.35);
+  --shadow-pop:  0 24px 60px rgba(0,0,0,.55);
+
+  /* ---- Type — brand manual specifies Arial; Helvetica Neue as the refined
+     match, then the system grotesque stack. -------------------------------- */
+  --font-sans: Arial, "Helvetica Neue", Helvetica, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-head: Arial, "Helvetica Neue", Helvetica, "Segoe UI", system-ui, sans-serif;
+  --font-ar:   "Cairo", "Tajawal", "Noto Kufi Arabic", var(--font-sans);
+  --font-mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+
+  --fs-hero:  clamp(40px, 6vw, 72px);
+  --fs-num:   clamp(28px, 4vw, 44px); /* large KPI numerals                  */
+  --fs-h1:    28px;
+  --fs-h2:    22px;
+  --fs-h3:    17px;
+  --fs-body:  14.5px;
+  --fs-sm:    13px;
+  --fs-xs:    11.5px;
+
+  --lh-tight: 1.05;
+  --lh-body:  1.55;
+
+  /* ---- Spacing / layout ------------------------------------------------- */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+  --sidebar-w: 264px;
+  --topbar-h:  64px;
+  --content-max: 1400px;
+
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px rgba(245,245,242,.55);
+  --transition: 160ms cubic-bezier(.2,.6,.2,1);
+  color-scheme: dark;
+}
+
+/* ---- LIGHT theme (opt-in; premium dark stays the default) --------------- */
+:root[data-theme="light"] {
+  --bg:          #F5F5F2;
+  --bg-sunken:   #ECECE8;
+  --surface:     #FFFFFF;
+  --surface-2:   #F2F2EF;
+  --surface-3:   #E8E8E4;
+  --sidebar-bg:  #1A1A1A;   /* executive dark rail even in light mode        */
+
+  --text:        #1A1A1A;
+  --text-muted:  #4A4A4A;
+  --text-faint:  #6E6E6E;
+  --text-inverse:#F5F5F2;
+
+  --accent:      #1A1A1A;
+  --accent-weak: rgba(17,17,17,.06);
+
+  --line:        1px solid rgba(0,0,0,.12);
+  --line-strong: 1px solid rgba(0,0,0,.22);
+  --line-color:  rgba(0,0,0,.12);
+  --hairline:    rgba(0,0,0,.07);
+
+  --shadow-soft: 0 18px 50px rgba(0,0,0,.14);
+  --shadow-card: 0 1px 0 rgba(0,0,0,.02), 0 10px 26px rgba(0,0,0,.08);
+  --shadow-pop:  0 24px 60px rgba(0,0,0,.20);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] { color-scheme: light; }
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+html[dir="rtl"] body, [dir="rtl"] { font-family: var(--font-ar); }
+
+h1,h2,h3,h4 { font-family: var(--font-head); font-weight: 800; line-height: var(--lh-tight); letter-spacing: -0.01em; margin: 0 0 var(--space-3); }
+h1 { font-size: var(--fs-h1); } h2 { font-size: var(--fs-h2); } h3 { font-size: var(--fs-h3); }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+/* Large index numerals — 01 / 02 / 03 */
+.tc-numeral {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: var(--fs-num);
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.tc-eyebrow {
+  font-size: var(--fs-xs);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+.tc-divider { height: 0; border: 0; border-top: var(--line); margin: var(--space-5) 0; }
+.tc-divider--v { width: 0; border: 0; border-left: var(--line); align-self: stretch; }
+
+/* ==========================================================================
+   APP SHELL — dark rail + topbar + content
+   ========================================================================== */
+.tc-shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+.tc-sidebar {
+  background: var(--sidebar-bg);
+  border-right: var(--line);
+  display: flex; flex-direction: column;
+  padding: var(--space-5) var(--space-4);
+  position: sticky; top: 0; height: 100vh;
+}
+[dir="rtl"] .tc-sidebar { border-right: 0; border-left: var(--line); }
+.tc-brandmark { display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-2) var(--space-6); }
+.tc-brandmark__cube { width: 30px; height: 30px; flex: 0 0 auto; }
+.tc-brandmark__name { font-family: var(--font-head); font-weight: 800; letter-spacing: .02em; font-size: 15px; color: var(--brand-white); }
+.tc-brandmark__name small { display: block; font-weight: 500; font-size: 10.5px; letter-spacing: .22em; color: var(--text-faint); text-transform: uppercase; }
+
+.tc-nav { display: flex; flex-direction: column; gap: 2px; }
+.tc-nav__section { font-size: var(--fs-xs); letter-spacing: .16em; text-transform: uppercase; color: var(--text-faint); padding: var(--space-5) var(--space-2) var(--space-2); }
+.tc-nav__item {
+  display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: var(--space-2);
+  padding: 10px var(--space-2); border-radius: var(--radius-md);
+  color: var(--text-muted); transition: var(--transition); cursor: pointer;
+}
+.tc-nav__item:hover { background: var(--accent-weak); color: var(--text); }
+.tc-nav__item[aria-current="page"], .tc-nav__item.is-active {
+  background: var(--surface-3); color: var(--brand-white);
+  box-shadow: inset 2px 0 0 var(--brand-white);
+}
+[dir="rtl"] .tc-nav__item.is-active { box-shadow: inset -2px 0 0 var(--brand-white); }
+.tc-nav__num { font-family: var(--font-head); font-weight: 800; font-size: 13px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.tc-nav__item.is-active .tc-nav__num { color: var(--brand-white); }
+.tc-nav__label { font-size: 13.5px; font-weight: 600; }
+
+.tc-main { display: flex; flex-direction: column; min-width: 0; }
+.tc-topbar {
+  height: var(--topbar-h); display: flex; align-items: center; gap: var(--space-4);
+  padding: 0 var(--space-6); border-bottom: var(--line);
+  position: sticky; top: 0; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); z-index: 20;
+}
+.tc-search {
+  flex: 1; max-width: 460px; display: flex; align-items: center; gap: var(--space-2);
+  background: var(--surface); border: var(--line); border-radius: var(--radius-pill);
+  padding: 8px var(--space-4); color: var(--text-faint);
+}
+.tc-search input { border: 0; background: transparent; color: var(--text); width: 100%; font: inherit; outline: none; }
+.tc-topbar__spacer { flex: 1; }
+.tc-iconbtn {
+  width: 38px; height: 38px; display: grid; place-items: center;
+  border-radius: var(--radius-pill); border: var(--line); background: var(--surface);
+  color: var(--text-muted); cursor: pointer; transition: var(--transition);
+}
+.tc-iconbtn:hover { background: var(--surface-2); color: var(--text); }
+.tc-content { padding: var(--space-6); max-width: var(--content-max); width: 100%; margin: 0 auto; }
+.tc-breadcrumb { display: flex; gap: var(--space-2); align-items: center; color: var(--text-faint); font-size: var(--fs-sm); margin-bottom: var(--space-4); }
+.tc-breadcrumb span::after { content: "/"; margin-inline-start: var(--space-2); color: var(--hairline); }
+.tc-breadcrumb span:last-child::after { content: ""; }
+
+/* ==========================================================================
+   CARDS / KPI
+   ========================================================================== */
+.tc-card { background: var(--surface); border: var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.tc-card__body { padding: var(--space-5); }
+.tc-card__head { padding: var(--space-4) var(--space-5); border-bottom: var(--line); display: flex; align-items: center; justify-content: space-between; }
+.tc-card__head h2, .tc-card__head h3 { margin: 0; }
+
+.tc-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); }
+.tc-kpi { background: var(--surface); border: var(--line); border-radius: var(--radius-lg); padding: var(--space-5); position: relative; overflow: hidden; }
+.tc-kpi__label { font-size: var(--fs-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--text-faint); }
+.tc-kpi__value { font-family: var(--font-head); font-weight: 800; font-size: var(--fs-num); margin-top: var(--space-2); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.tc-kpi__foot { margin-top: var(--space-3); padding-top: var(--space-3); border-top: var(--line); display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-sm); color: var(--text-muted); }
+.tc-kpi__delta.is-up { color: var(--status-success); }
+.tc-kpi__delta.is-down { color: var(--status-danger); }
+
+/* Module landing header: 01 ITSM style */
+.tc-module-head { display: flex; align-items: flex-end; gap: var(--space-5); padding-bottom: var(--space-5); border-bottom: var(--line-strong); margin-bottom: var(--space-6); }
+.tc-module-head .tc-numeral { font-size: var(--fs-hero); color: var(--text-faint); }
+.tc-module-head h1 { font-size: clamp(24px, 3vw, 38px); margin: 0; }
+.tc-module-head p { color: var(--text-muted); margin: var(--space-2) 0 0; }
+
+/* ==========================================================================
+   STATUS CHIPS — the only place saturated color appears
+   ========================================================================== */
+.tc-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: var(--radius-pill);
+  font-size: var(--fs-xs); font-weight: 700; letter-spacing: .02em;
+  border: var(--line); color: var(--text-muted); background: var(--surface-2);
+}
+.tc-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--status-neutral); }
+.tc-chip--success { color: var(--status-success); } .tc-chip--success::before { background: var(--status-success); }
+.tc-chip--warning { color: var(--status-warning); } .tc-chip--warning::before { background: var(--status-warning); }
+.tc-chip--danger  { color: var(--status-danger); }  .tc-chip--danger::before  { background: var(--status-danger); }
+.tc-chip--info    { color: var(--status-info); }    .tc-chip--info::before    { background: var(--status-info); }
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.tc-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  font: inherit; font-weight: 700; font-size: var(--fs-sm);
+  padding: 9px 16px; border-radius: var(--radius-md); cursor: pointer;
+  border: var(--line); background: var(--surface-2); color: var(--text);
+  transition: var(--transition);
+}
+.tc-btn:hover { background: var(--surface-3); }
+.tc-btn--primary { background: var(--brand-white); color: var(--text-inverse); border-color: transparent; }
+:root[data-theme="light"] .tc-btn--primary { background: var(--brand-black); color: var(--brand-white); }
+.tc-btn--primary:hover { filter: brightness(.92); }
+.tc-btn--ghost { background: transparent; }
+.tc-btn--danger { color: var(--status-danger); border-color: color-mix(in srgb, var(--status-danger) 40%, transparent); }
+
+/* ==========================================================================
+   TABLES
+   ========================================================================== */
+.tc-table-wrap { border: var(--line); border-radius: var(--radius-lg); overflow: auto; background: var(--surface); }
+.tc-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.tc-table thead th {
+  position: sticky; top: 0; background: var(--surface-2); text-align: start;
+  font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint);
+  padding: 12px var(--space-4); border-bottom: var(--line); font-weight: 700; white-space: nowrap;
+}
+.tc-table tbody td { padding: 12px var(--space-4); border-bottom: var(--line); color: var(--text); vertical-align: middle; }
+.tc-table tbody tr:hover td { background: var(--accent-weak); }
+.tc-table tbody tr:last-child td { border-bottom: 0; }
+
+/* ==========================================================================
+   FORMS
+   ========================================================================== */
+.tc-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-4); }
+.tc-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted); }
+.tc-input, .tc-select, .tc-textarea {
+  font: inherit; color: var(--text); background: var(--bg-sunken);
+  border: var(--line); border-radius: var(--radius-md); padding: 10px var(--space-4); width: 100%;
+  transition: var(--transition);
+}
+.tc-input:focus, .tc-select:focus, .tc-textarea:focus { border-color: var(--brand-silver); background: var(--surface); }
+.tc-fieldset { border: var(--line); border-radius: var(--radius-lg); padding: var(--space-5); }
+.tc-fieldset > legend { padding: 0 var(--space-3); font-size: var(--fs-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--text-faint); }
+
+/* ==========================================================================
+   MOTIF — the cube/arrow logo used ONCE per major section as a watermark
+   ========================================================================== */
+.tc-motif { position: relative; }
+.tc-motif::after {
+  content: ""; position: absolute; inset: auto -40px -60px auto; width: 240px; height: 240px;
+  background: no-repeat right bottom / contain;
+  opacity: .05; pointer-events: none;
+  /* replaced at build time with the real cube SVG; placeholder geometric mark */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 4 92 28v44L50 96 8 72V28z' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Cpath d='M50 4v92M8 28l84 44M92 28L8 72' fill='none' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   HERO + LOGO — the brand's charcoal radial treatment and logo lockups
+   ========================================================================== */
+.tc-hero {
+  position: relative; overflow: hidden; border-radius: var(--radius-xl);
+  padding: clamp(28px, 5vw, 64px);
+  background: radial-gradient(125% 150% at 50% 30%, #3c3c3c 0%, #2e2e2e 46%, #222 100%);
+  color: var(--brand-offwhite); border: var(--line);
+}
+.tc-hero h1 { color: var(--brand-white); }
+.tc-hero p { color: var(--brand-light-grey); }
+
+.tc-logo      { height: 30px; width: auto; display: block; }
+.tc-logo--sm  { height: 22px; }
+.tc-logo--lg  { height: 44px; }
+.tc-logo-mark { height: 30px; width: auto; display: block; }
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width: 900px) {
+  .tc-shell { grid-template-columns: 1fr; }
+  .tc-sidebar { position: fixed; z-index: 50; transform: translateX(-100%); transition: transform var(--transition); width: min(84vw, var(--sidebar-w)); }
+  [dir="rtl"] .tc-sidebar { transform: translateX(100%); }
+  .tc-sidebar.is-open { transform: translateX(0); }
+  .tc-content { padding: var(--space-4); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

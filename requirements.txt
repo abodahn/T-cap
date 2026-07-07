@@ -1,0 +1,9 @@
+# T-CAP runtime dependencies.
+Flask==3.0.3
+Werkzeug==3.0.3
+python-dotenv==1.0.1
+openpyxl==3.1.5          # Excel (.xlsx) exports
+reportlab==4.2.2         # branded PDF reports
+# Production WSGI servers:
+gunicorn==22.0.0 ; sys_platform != "win32"   # Render / Linux
+waitress==3.0.0 ; sys_platform == "win32"    # Windows

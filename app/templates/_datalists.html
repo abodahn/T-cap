@@ -1,0 +1,8 @@
+{# Reusable <datalist>s for dropdown + autocomplete inputs. Include once per form. #}
+<datalist id="dl-companies">{% for x in md.companies %}<option value="{{ x }}">{% endfor %}</datalist>
+<datalist id="dl-sites">{% for x in md.sites %}<option value="{{ x }}">{% endfor %}</datalist>
+<datalist id="dl-departments">{% for x in md.departments %}<option value="{{ x }}">{% endfor %}</datalist>
+<datalist id="dl-locations">{% for x in md.locations %}<option value="{{ x }}">{% endfor %}</datalist>
+<datalist id="dl-brands">{% for x in md.brands %}<option value="{{ x }}">{% endfor %}</datalist>
+<datalist id="dl-models">{% for x in md.models %}<option value="{{ x }}">{% endfor %}</datalist>
+<datalist id="dl-people">{% for x in md.people %}<option value="{{ x }}">{% endfor %}</datalist>

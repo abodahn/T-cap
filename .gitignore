@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Instance / runtime data (DB, generated secret key)
+instance/
+*.db
+.secret_key
+
+# Local env
+.env
+
+# Agent runtime
+agent/agent_config.json
+agent/pending.jsonl
+
+# OS / editor
+.DS_Store
+Thumbs.db

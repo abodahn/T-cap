@@ -1,0 +1,60 @@
+# T-CAP — Render Blueprint. Deploy: push to GitHub, then Render → New → Blueprint,
+# point it at this repo. Render reads this file and provisions the service.
+#
+# Storage note: on the free plan the filesystem is EPHEMERAL — the SQLite database
+# is re-created and re-seeded (demo data) on every deploy/restart, which is ideal
+# for a showcase. To PERSIST data across deploys, upgrade to a paid plan and
+# uncomment the `disk:` block below (mounts a real disk and points the DB at it).
+
+services:
+  - type: web
+    name: t-cap
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --workers 1 --threads 8 --timeout 120 --bind 0.0.0.0:$PORT
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.5"
+      - key: TCAP_ENV
+        value: production
+      - key: TCAP_DEBUG
+        value: "false"
+      # Stable session key (persists across deploys via Render) — generated once.
+      - key: TCAP_SECRET_KEY
+        generateValue: true
+      # Strong admin password — read it in the Render dashboard (Environment tab)
+      # after the first deploy. Username is "admin".
+      - key: TCAP_ADMIN_PASSWORD
+        generateValue: true
+      # HTTPS on Render → keep secure cookies on.
+      - key: TCAP_COOKIE_SECURE
+        value: "true"
+      # Seed demo role accounts (password Demo@2026) so visitors can try each role.
+      # Set to "false" for a private/production instance.
+      - key: TCAP_SEED_DEMO
+        value: "true"
+      - key: TCAP_DEFAULT_LANG
+        value: en
+      - key: TCAP_DEFAULT_THEME
+        value: dark
+      - key: TCAP_ORG_NAME
+        value: T-GROUP
+      # Public base URL so notification emails can link back (optional).
+      # - key: TCAP_PUBLIC_URL
+      #   value: https://t-cap.onrender.com
+      # --- Email notifications (optional): set these to enable SMTP ---
+      # - { key: TCAP_SMTP_HOST, value: smtp.office365.com }
+      # - { key: TCAP_SMTP_PORT, value: "587" }
+      # - { key: TCAP_SMTP_USER, sync: false }
+      # - { key: TCAP_SMTP_PASS, sync: false }
+      # --- Persist the SQLite DB across deploys (PAID plans only) ---
+      # - key: TCAP_DB_PATH
+      #   value: /var/data/tcap.db
+    # disk:
+    #   name: tcap-data
+    #   mountPath: /var/data
+    #   sizeGB: 1

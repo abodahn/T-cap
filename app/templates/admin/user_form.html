@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ t('new_user') if mode=='new' else t('edit_user') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>◆</b> · {{ t('administration') }}</span>
+    <h1 class="tc-h1">{{ t('new_user') if mode=='new' else t('edit_user') }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--ghost" href="{{ url_for('admin.users') }}">← {{ t('back') }}</a>
+</div>
+
+{% if error %}<div class="tc-alert tc-alert--danger">{{ t(error) }}</div>{% endif %}
+
+<form method="post" class="tc-card" style="max-width:720px"><div class="tc-card__body">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">{{ t('username') }}</label>
+      {% if mode=='new' %}<input class="tc-input" name="username" required autofocus>
+      {% else %}<input class="tc-input tc-mono" value="{{ u['username'] }}" disabled>{% endif %}</div>
+    <div class="tc-field"><label class="tc-label">{{ t('name') }}</label>
+      <input class="tc-input" name="full_name" value="{{ u['full_name'] if u }}" required></div>
+  </div>
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">{{ t('email') }}</label>
+      <input class="tc-input" name="email" type="email" value="{{ u['email'] if u }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('role') }}</label>
+      <select class="tc-select" name="role" {{ 'disabled' if u and u['role']=='super_admin' }}>
+        {% for key, label in roles.items() %}<option value="{{ key }}" {{ 'selected' if u and u['role']==key }}>{{ t('role_'+key) }}</option>{% endfor %}
+      </select></div>
+  </div>
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">{{ t('department') }}</label>
+      <select class="tc-select" name="department">{% for d in departments %}<option {{ 'selected' if u and u['department']==d }}>{{ d }}</option>{% endfor %}</select></div>
+    <div class="tc-field"><label class="tc-label">{{ t('site') }}</label>
+      <select class="tc-select" name="site">{% for s in sites %}<option {{ 'selected' if u and u['site']==s }}>{{ s }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">{{ t('password') }} <span class="tc-faint">({{ t('leave_blank_random') if mode=='new' else t('leave_blank_keep') }})</span></label>
+      <input class="tc-input" name="password" type="text" autocomplete="new-password" placeholder="••••••"></div>
+    {% if mode=='edit' %}
+    <div class="tc-field"><label class="tc-label">{{ t('active') }}</label>
+      <label class="tc-flex" style="gap:8px;padding-top:10px"><input type="checkbox" name="is_active" value="1" {{ 'checked' if u['is_active'] }} {{ 'disabled' if u['role']=='super_admin' }}> {{ t('active') }}</label></div>
+    {% endif %}
+  </div>
+  <div class="tc-btnbar tc-mt">
+    <button class="tc-btn tc-btn--primary" type="submit">{{ t('save') }}</button>
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('admin.users') }}">{{ t('cancel') }}</a>
+  </div>
+</div></form>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_chip, asset_chip, ep_chip %}
+{% block title %}{{ t('search_results') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>⌕</b> · {{ t('search_results') }}</span>
+    <h1 class="tc-h1">“{{ q }}”</h1>
+  </div>
+</div>
+
+{% set total = results.tickets|length + results.assets|length + results.endpoints|length %}
+{% if total == 0 %}<div class="tc-card"><div class="tc-card__body tc-muted">{{ t('no_results') }}</div></div>{% endif %}
+
+{% if results.tickets %}<h3>{{ t('tickets') }}</h3>
+<div class="tc-table-wrap tc-mt"><table class="tc-table"><tbody>
+  {% for r in results.tickets %}<tr onclick="location='{{ url_for('itsm.view', ref=r['ref']) }}'" style="cursor:pointer">
+    <td class="tc-mono">{{ r['ref'] }}</td><td>{{ r['subject'] }}</td><td>{{ status_chip(r['status']) }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+
+{% if results.assets %}<h3 class="tc-mt">{{ t('assets') }}</h3>
+<div class="tc-table-wrap"><table class="tc-table"><tbody>
+  {% for r in results.assets %}<tr onclick="location='{{ url_for('asm.view', asset_id=r['asset_id']) }}'" style="cursor:pointer">
+    <td class="tc-mono">{{ r['asset_id'] }}</td><td>{{ r['name'] }}</td><td>{{ asset_chip(r['status']) }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+
+{% if results.endpoints %}<h3 class="tc-mt">{{ t('endpoints') }}</h3>
+<div class="tc-table-wrap"><table class="tc-table"><tbody>
+  {% for r in results.endpoints %}<tr onclick="location='{{ url_for('monitoring.view', hostname=r['hostname']) }}'" style="cursor:pointer">
+    <td class="tc-mono">{{ r['hostname'] }}</td><td class="tc-faint">{{ r['ip'] }}</td><td>{{ ep_chip(r['status'], t) }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}{{ t('administration') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>◆</b> · {{ t('administration') }}</span>
+    <h1 class="tc-h1">{{ t('users') }}</h1>
+  </div>
+  {% if user_can('manage_users') %}<a class="tc-btn tc-btn--primary" href="{{ url_for('admin.user_new') }}">＋ {{ t('new_user') }}</a>{% endif %}
+</div>
+
+<div class="tc-seg" style="margin-bottom:var(--space-5)">
+  <a class="on" href="{{ url_for('admin.users') }}">{{ t('users') }} <span class="n">{{ users|length }}</span></a>
+  <a href="{{ url_for('admin.roles') }}">{{ t('roles_permissions') }}</a>
+</div>
+
+<div class="tc-grid-2">
+  <div class="tc-table-wrap">
+    <table class="tc-table">
+      <thead><tr><th>{{ t('username') }}</th><th>{{ t('name') }}</th><th>{{ t('role') }}</th><th>{{ t('department') }}</th><th>{{ t('active') }}</th><th></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="tc-mono">{{ u['username'] }}</td><td>{{ u['full_name'] }}</td>
+          <td>{{ t('role_'+u['role']) }}</td><td class="tc-faint">{{ u['department'] }}</td>
+          <td>{% if u['is_active'] %}{{ chip(t('active'),'success') }}{% else %}{{ chip(t('inactive'),'danger') }}{% endif %}</td>
+          <td class="tc-right">
+            {% if user_can('manage_users') %}
+            <div class="tc-btnbar" style="justify-content:flex-end">
+              <a class="tc-btn tc-btn--sm tc-btn--ghost" href="{{ url_for('admin.user_edit', uid=u['id']) }}">{{ t('edit') }}</a>
+              {% if u['role'] != 'super_admin' %}
+              <form method="post" action="{{ url_for('admin.toggle_user', uid=u['id']) }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <button class="tc-btn tc-btn--sm tc-btn--ghost">{{ t('disable') if u['is_active'] else t('enable') }}</button>
+              </form>{% endif %}
+            </div>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('audit_log') }}</h3></div>
+    <div class="tc-card__body"><ul class="tc-timeline">
+      {% for a in audit %}<li><b>{{ a['username'] }}</b> — {{ a['action'] }} {{ a['detail'] }}<br><small>{{ a['created_at'][:16] }}</small></li>
+      {% else %}<li class="tc-muted">{{ t('no_records') }}</li>{% endfor %}
+    </ul></div>
+  </div>
+</div>
+{% endblock %}

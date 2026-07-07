@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ t('edit_endpoint') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>03</b> · {{ t('mod_monitoring') }} · <span class="tc-mono">{{ e['hostname'] }}</span></span>
+    <h1 class="tc-h1">{{ t('edit_endpoint') }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--ghost" href="{{ url_for('monitoring.view', hostname=e['hostname']) }}">← {{ t('back') }}</a>
+</div>
+{% include "_datalists.html" %}
+<form method="post" class="tc-card" style="max-width:680px"><div class="tc-card__body">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">IP</label><input class="tc-input tc-mono" name="ip" value="{{ e['ip'] }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('os') }}</label>
+      <select class="tc-select" name="os">{% for o in ['Windows 11','Windows 10','Windows Server 2022'] %}<option {{ 'selected' if e['os']==o }}>{{ o }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">{{ t('site') }}</label>
+      <input class="tc-input" name="site" list="dl-sites" autocomplete="off" value="{{ e['site'] }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('department') }}</label>
+      <input class="tc-input" name="department" list="dl-departments" autocomplete="off" value="{{ e['department'] }}"></div>
+  </div>
+  <div class="tc-field"><label class="tc-label">{{ t('linked_asset') }}</label>
+    <select class="tc-select" name="asset_ref"><option value="">{{ t('none') }}</option>
+      {% for a in assets %}<option value="{{ a['asset_id'] }}" {{ 'selected' if e['asset_ref']==a['asset_id'] }}>{{ a['asset_id'] }} · {{ a['name'] }}</option>{% endfor %}</select></div>
+  <div class="tc-btnbar tc-mt">
+    <button class="tc-btn tc-btn--primary" type="submit">{{ t('save') }}</button>
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('monitoring.view', hostname=e['hostname']) }}">{{ t('cancel') }}</a>
+  </div>
+</div></form>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ t('roles_permissions') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>◆</b> · {{ t('administration') }}</span>
+    <h1 class="tc-h1">{{ t('roles_permissions') }}</h1>
+  </div>
+</div>
+
+<div class="tc-seg" style="margin-bottom:var(--space-5)">
+  <a href="{{ url_for('admin.users') }}">{{ t('users') }}</a>
+  <a class="on" href="{{ url_for('admin.roles') }}">{{ t('roles_permissions') }}</a>
+</div>
+
+{% if not can_edit %}<div class="tc-alert">{{ t('roles_readonly') }}</div>{% endif %}
+
+<form method="post" action="{{ url_for('admin.roles_save') }}">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="tc-flex" style="justify-content:space-between;margin-bottom:12px">
+    <div class="tc-section" style="margin:0">{{ t('permission_matrix') }}</div>
+    {% if can_edit %}<button class="tc-btn tc-btn--primary tc-btn--sm" type="submit">{{ t('save_changes') }}</button>{% endif %}
+  </div>
+  <div class="tc-table-wrap">
+    <table class="tc-matrix">
+      <thead><tr><th style="text-align:start">{{ t('permission') }}</th>
+        {% for key, label in roles.items() %}<th>{{ t('role_'+key) }}<div class="tc-faint" style="font-weight:400;text-transform:none;letter-spacing:0">{{ counts[key] }} {{ t('users')|lower }}</div></th>{% endfor %}
+      </tr></thead>
+      <tbody>
+        {% for grp, perms in groups.items() %}
+        <tr><th class="grp" colspan="{{ roles|length + 1 }}">{{ grp }}</th></tr>
+        {% for perm in perms %}
+        <tr><th>{{ plabels[perm] }}</th>
+          {% for key in roles %}
+          <td>
+            {% if key=='super_admin' %}<input type="checkbox" checked disabled title="Super Admin has all">
+            {% elif can_edit %}<input type="checkbox" name="p:{{ key }}:{{ perm }}" {{ 'checked' if perm in grant.get(key, []) }}>
+            {% else %}<span style="color:{{ 'var(--status-success)' if perm in grant.get(key, []) else 'var(--text-faint)' }}">{{ '✓' if perm in grant.get(key, []) else '·' }}</span>{% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if can_edit %}<div class="tc-btnbar tc-mt"><button class="tc-btn tc-btn--primary" type="submit">{{ t('save_changes') }}</button></div>{% endif %}
+</form>
+
+<div class="tc-section">{{ t('responsibility_matrix') }}</div>
+<div class="tc-flex tc-wrap" style="gap:16px;margin-bottom:12px;font-size:12px">
+  <span class="tc-flex" style="gap:6px"><span class="tc-lvl tc-lvl--full"></span>{{ t('full_access') }}</span>
+  <span class="tc-flex" style="gap:6px"><span class="tc-lvl tc-lvl--view"></span>{{ t('view_only') }}</span>
+  <span class="tc-flex" style="gap:6px"><span class="tc-lvl tc-lvl--none"></span>{{ t('no_access') }}</span>
+</div>
+<div class="tc-table-wrap">
+  <table class="tc-matrix">
+    <thead><tr><th style="text-align:start">{{ t('role') }}</th>{% for m in modules %}<th>{{ m }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for key, label in roles.items() %}
+      <tr><th>{{ t('role_'+key) }}</th>
+        {% for m in modules %}{% set lvl = resp[key][m] %}
+        <td><span class="tc-lvl tc-lvl--{{ lvl }}" title="{{ t('full_access') if lvl=='full' else t('view_only') if lvl=='view' else t('no_access') }}"></span></td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

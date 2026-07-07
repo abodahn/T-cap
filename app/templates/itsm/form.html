@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% set ed = (mode == 'edit') %}
+{% block title %}{{ (t('edit') + ' ' + tk['ref']) if ed else t('new_ticket') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>01</b> · {{ t('mod_itsm') }}{% if ed %} · <span class="tc-mono">{{ tk['ref'] }}</span>{% endif %}</span>
+    <h1 class="tc-h1">{{ t('edit') if ed else t('new_ticket') }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.view', ref=tk['ref']) if ed else url_for('itsm.index') }}">← {{ t('back') }}</a>
+</div>
+
+{% include "_datalists.html" %}
+<form method="post" action="{{ url_for('itsm.edit', ref=tk['ref']) if ed else url_for('itsm.new') }}" class="tc-card"><div class="tc-card__body">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="tc-field"><label class="tc-label">{{ t('subject') }}</label>
+    <input class="tc-input" name="subject" required autofocus value="{{ tk['subject'] if ed }}"></div>
+  <div class="tc-field"><label class="tc-label">{{ t('description') }}</label>
+    <textarea class="tc-textarea" name="description" rows="4">{{ tk['description'] if ed }}</textarea></div>
+
+  <div class="tc-grid-3">
+    <div class="tc-field"><label class="tc-label">{{ t('type') }}</label>
+      <select class="tc-select" name="type">{% for x in core.TYPES %}<option {{ 'selected' if ed and tk['type']==x }}>{{ x }}</option>{% endfor %}</select></div>
+    <div class="tc-field"><label class="tc-label">{{ t('category') }}</label>
+      <select class="tc-select" name="category" id="cat" onchange="fillSub()">{% for c in core.CATEGORIES.keys() %}<option {{ 'selected' if ed and tk['category']==c }}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="tc-field"><label class="tc-label">{{ t('subcategory') }}</label>
+      <select class="tc-select" name="subcategory" id="sub"></select></div>
+  </div>
+
+  <div class="tc-grid-3">
+    <div class="tc-field"><label class="tc-label">{{ t('impact') }}</label>
+      <select class="tc-select" name="impact" id="imp" onchange="calcP()">{% for x in core.IMPACTS %}<option {{ 'selected' if (ed and tk['impact']==x) or (not ed and x=='Single User') }}>{{ x }}</option>{% endfor %}</select></div>
+    <div class="tc-field"><label class="tc-label">{{ t('urgency') }}</label>
+      <select class="tc-select" name="urgency" id="urg" onchange="calcP()">{% for x in core.URGENCIES %}<option {{ 'selected' if (ed and tk['urgency']==x) or (not ed and x=='Medium') }}>{{ x }}</option>{% endfor %}</select></div>
+    <div class="tc-field"><label class="tc-label">{{ t('priority') }} <span class="tc-faint">({{ t('auto') }})</span></label>
+      <div id="prio" class="tc-input" style="display:flex;align-items:center;font-weight:700">{{ tk['priority'] if ed else 'Medium' }}</div></div>
+  </div>
+
+  <div class="tc-grid-3">
+    <div class="tc-field"><label class="tc-label">{{ t('requester') }}</label><input class="tc-input" name="requester" list="dl-people" autocomplete="off" value="{{ tk['requester'] if ed else user['full_name'] }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('department') }}</label><input class="tc-input" name="department" list="dl-departments" autocomplete="off" value="{{ tk['department'] if ed else user['department'] }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('site') }}</label><input class="tc-input" name="site" list="dl-sites" autocomplete="off" value="{{ tk['site'] if ed else user['site'] }}"></div>
+  </div>
+
+  <div class="tc-grid-2">
+    {% if not ed %}
+    <div class="tc-field"><label class="tc-label">{{ t('assigned_agent') }}</label>
+      <select class="tc-select" name="assigned_agent"><option value="">{{ t('none') }}</option>
+        {% for a in agents %}<option>{{ a['full_name'] }}</option>{% endfor %}</select></div>
+    {% endif %}
+    <div class="tc-field"><label class="tc-label">{{ t('linked_asset') }}</label>
+      <select class="tc-select" name="asset_ref"><option value="">{{ t('none') }}</option>
+        {% for a in assets %}<option value="{{ a['asset_id'] }}" {{ 'selected' if ed and tk['asset_ref']==a['asset_id'] }}>{{ a['asset_id'] }} · {{ a['name'] }}</option>{% endfor %}</select></div>
+  </div>
+
+  <div class="tc-btnbar tc-mt">
+    <button class="tc-btn tc-btn--primary" type="submit">{{ t('save') }}</button>
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.view', ref=tk['ref']) if ed else url_for('itsm.index') }}">{{ t('cancel') }}</a>
+  </div>
+</div></form>
+
+<script>
+  var SUBS = {{ core.CATEGORIES | tojson }};
+  var CUR_SUB = {{ (tk['subcategory'] if ed else '') | tojson }};
+  var MATRIX = {
+    "Single User":{"Low":"Low","Medium":"Low","High":"Medium","Critical":"High"},
+    "Multiple Users":{"Low":"Low","Medium":"Medium","High":"High","Critical":"High"},
+    "Department":{"Low":"Medium","Medium":"High","High":"High","Critical":"Critical"},
+    "Whole Company":{"Low":"High","Medium":"High","High":"Critical","Critical":"Critical"}
+  };
+  function fillSub(){
+    var c=document.getElementById('cat').value, s=document.getElementById('sub');
+    s.innerHTML=''; (SUBS[c]||[]).forEach(function(x){var o=document.createElement('option');o.textContent=x;if(x===CUR_SUB)o.selected=true;s.appendChild(o);});
+  }
+  function calcP(){
+    var p=(MATRIX[document.getElementById('imp').value]||{})[document.getElementById('urg').value]||'Medium';
+    document.getElementById('prio').textContent=p;
+  }
+  fillSub(); calcP();
+</script>
+{% endblock %}

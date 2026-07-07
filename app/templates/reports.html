@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ t('reports') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>◆</b> · {{ org }} · {{ t('app_name') }}</span>
+    <h1 class="tc-h1">{{ t('reports') }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--primary" href="{{ url_for('main.reports_pdf', date_from=f.date_from, date_to=f.date_to, site=f.site, department=f.department) }}">⭳ {{ t('export_pdf') }}</a>
+</div>
+
+<form class="tc-toolbar" method="get" style="margin-bottom:var(--space-5)">
+  <label class="tc-flex" style="gap:6px;font-size:var(--fs-sm)">{{ t('date_from') }}<input class="tc-input" type="date" name="date_from" value="{{ f.date_from }}"></label>
+  <label class="tc-flex" style="gap:6px;font-size:var(--fs-sm)">{{ t('date_to') }}<input class="tc-input" type="date" name="date_to" value="{{ f.date_to }}"></label>
+  <select class="tc-select" name="site"><option value="">{{ t('all_sites') }}</option>{% for s in md.sites %}<option {{ 'selected' if f.site==s }}>{{ s }}</option>{% endfor %}</select>
+  <select class="tc-select" name="department"><option value="">{{ t('all_departments') }}</option>{% for d in md.departments %}<option {{ 'selected' if f.department==d }}>{{ d }}</option>{% endfor %}</select>
+  <button class="tc-btn tc-btn--sm">{{ t('apply') }}</button>
+  {% if f.date_from or f.date_to or f.site or f.department %}<a class="tc-btn tc-btn--sm tc-btn--ghost" href="{{ url_for('main.reports') }}">{{ t('clear') }}</a>{% endif %}
+</form>
+
+<div class="tc-kpi-grid" style="margin-bottom:var(--space-5)">
+  <div class="tc-kpi"><div class="tc-kpi__label">{{ t('open_tickets') }}</div><div class="tc-kpi__value">{{ kpis.open_tickets }}</div></div>
+  <div class="tc-kpi"><div class="tc-kpi__label">{{ t('sla_compliance') }}</div><div class="tc-kpi__value">{{ kpis.sla }}%</div></div>
+  <div class="tc-kpi"><div class="tc-kpi__label">{{ t('total_assets') }}</div><div class="tc-kpi__value">{{ kpis.total_assets }}</div></div>
+  <div class="tc-kpi"><div class="tc-kpi__label">{{ t('open_alerts') }}</div><div class="tc-kpi__value">{{ kpis.open_alerts }}</div></div>
+</div>
+
+<div class="tc-grid-2">
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('tickets') }} · {{ t('status') }}</h3></div>
+    <div class="tc-card__body">
+      {% set mx = (by_status|map(attribute='c')|list|max) or 1 %}
+      {% for r in by_status %}
+      <div class="tc-metric-row"><span>{{ r['status'] }}</span>
+        <div class="tc-meter"><span style="width:{{ (r['c']/mx*100)|round }}%"></span></div>
+        <b class="tc-right tc-mono">{{ r['c'] }}</b></div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="tc-card"><div class="tc-card__head"><h3 style="margin:0">{{ t('assets') }} · {{ t('category') }}</h3></div>
+    <div class="tc-card__body">
+      {% set mx2 = (by_cat|map(attribute='c')|list|max) or 1 %}
+      {% for r in by_cat %}
+      <div class="tc-metric-row"><span>{{ r['category'] }}</span>
+        <div class="tc-meter"><span style="width:{{ (r['c']/mx2*100)|round }}%"></span></div>
+        <b class="tc-right tc-mono">{{ r['c'] }}</b></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

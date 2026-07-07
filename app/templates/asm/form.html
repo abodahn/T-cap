@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% set ed = (mode == 'edit') %}
+{% block title %}{{ (t('edit') + ' ' + a['asset_id']) if ed else t('new_asset') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>02</b> · {{ t('mod_asm') }}{% if ed %} · <span class="tc-mono">{{ a['asset_id'] }}</span>{% endif %}</span>
+    <h1 class="tc-h1">{{ t('edit') if ed else t('new_asset') }}</h1>
+  </div>
+  <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.view', asset_id=a['asset_id']) if ed else url_for('asm.index') }}">← {{ t('back') }}</a>
+</div>
+
+{% include "_datalists.html" %}
+<form method="post" action="{{ url_for('asm.edit', asset_id=a['asset_id']) if ed else url_for('asm.new') }}" class="tc-card"><div class="tc-card__body">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">{{ t('name') }}</label><input class="tc-input" name="name" required autofocus value="{{ a['name'] if ed }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('category') }}</label>
+      <select class="tc-select" name="category">{% for c in categories %}<option {{ 'selected' if ed and a['category']==c }}>{{ c }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="tc-grid-3">
+    <div class="tc-field"><label class="tc-label">{{ t('brand') }}</label><input class="tc-input" name="brand" list="dl-brands" autocomplete="off" value="{{ a['brand'] if ed }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('model') }}</label><input class="tc-input" name="model" list="dl-models" autocomplete="off" value="{{ a['model'] if ed }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('serial') }}</label><input class="tc-input" name="serial" value="{{ a['serial'] if ed }}"></div>
+  </div>
+  <div class="tc-grid-3">
+    <div class="tc-field"><label class="tc-label">{{ t('company') }}</label><input class="tc-input" name="company" list="dl-companies" autocomplete="off" value="{{ a['company'] if ed }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('department') }}</label><input class="tc-input" name="department" list="dl-departments" autocomplete="off" value="{{ a['department'] if ed }}"></div>
+    {% if not ed %}
+    <div class="tc-field"><label class="tc-label">{{ t('site') }}</label>
+      <input class="tc-input" name="site" list="dl-sites" autocomplete="off" placeholder="{{ t('site') }}"></div>
+    {% endif %}
+  </div>
+  {% if not ed %}
+  <div class="tc-grid-2">
+    <div class="tc-field"><label class="tc-label">{{ t('custodian') }}</label>
+      <input class="tc-input" name="custodian" list="dl-people" autocomplete="off" placeholder="{{ t('none') }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('status') }}</label>
+      <select class="tc-select" name="status">{% for s in statuses %}<option>{{ s }}</option>{% endfor %}</select></div>
+  </div>
+  {% endif %}
+  <div class="tc-grid-3">
+    <div class="tc-field"><label class="tc-label">{{ t('purchase_date') }}</label><input class="tc-input" name="purchase_date" type="date" value="{{ a['purchase_date'] if ed }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('purchase_value') }}</label><input class="tc-input" name="purchase_value" type="number" step="0.01" value="{{ a['purchase_value'] if ed else 0 }}"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('warranty_end') }}</label><input class="tc-input" name="warranty_end" type="date" value="{{ a['warranty_end'] if ed }}"></div>
+  </div>
+  <div class="tc-btnbar tc-mt">
+    <button class="tc-btn tc-btn--primary" type="submit">{{ t('save') }}</button>
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.view', asset_id=a['asset_id']) if ed else url_for('asm.index') }}">{{ t('cancel') }}</a>
+  </div>
+</div></form>
+{% endblock %}

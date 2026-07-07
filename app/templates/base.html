@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir_ }}" data-theme="{{ theme }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ t('app_name') }}{% endblock %} · {{ org }}</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon-192.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tc-brand.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+{% if user %}
+<div class="tc-shell">
+  <aside class="tc-sidebar" id="sidebar">
+    <a class="tc-brandmark" href="{{ url_for('main.dashboard') }}">
+      <img class="tc-brandmark__cube" src="{{ url_for('static', filename='img/logo-mark-white.png') }}" alt="{{ org }}">
+      <span class="tc-brandmark__name">{{ org }}<small>{{ t('control_suite') }}</small></span>
+    </a>
+    <nav class="tc-nav">
+      <div class="tc-nav__section">{{ t('nav_systems') }}</div>
+      {% for key, ep, num, perm in nav_systems %}{% if user_can(perm) %}
+      <a class="tc-nav__item {{ 'is-active' if request.blueprint == key or request.path.startswith('/'+key) }}" href="{{ url_for(ep) }}">
+        <span class="tc-nav__num">{{ num }}</span><span class="tc-nav__label">{{ t('mod_'+key) }}</span>
+      </a>{% endif %}{% endfor %}
+      <div class="tc-nav__section">{{ t('nav_platform') }}</div>
+      {% for key, ep, num, perm in nav_platform %}{% if user_can(perm) %}
+      <a class="tc-nav__item {{ 'is-active' if request.endpoint == ep }}" href="{{ url_for(ep) }}">
+        <span class="tc-nav__num">{{ num }}</span><span class="tc-nav__label">{{ t('mod_'+key) }}</span>
+      </a>{% endif %}{% endfor %}
+    </nav>
+    <div class="tc-sidebar__foot">
+      <a class="tc-user" href="{{ url_for('main.profile') }}">
+        <span class="tc-avatar">{{ user['full_name'][:1] }}</span>
+        <span class="tc-user__meta"><b>{{ user['full_name'] }}</b><small>{{ t('role_'+user['role']) }}</small></span>
+      </a>
+    </div>
+  </aside>
+
+  <main class="tc-main">
+    <header class="tc-topbar">
+      <button class="tc-iconbtn tc-only-mobile" id="menuBtn" aria-label="Menu">☰</button>
+      <form class="tc-search" action="{{ url_for('main.search') }}" method="get">
+        <span>⌕</span><input name="q" placeholder="{{ t('search_ph') }}" value="{{ request.args.get('q','') }}">
+      </form>
+      <div class="tc-topbar__spacer"></div>
+
+      <form method="post" action="{{ url_for('auth.set_lang', lang='ar' if lang=='en' else 'en') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-iconbtn tc-lang" title="{{ t('language') }}">{{ 'ع' if lang=='en' else 'EN' }}</button>
+      </form>
+      <form method="post" action="{{ url_for('auth.set_theme', theme='light' if theme=='dark' else 'dark') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-iconbtn" title="{{ t('theme') }}">{{ '☀' if theme=='dark' else '☾' }}</button>
+      </form>
+      <div class="tc-notif">
+        <button class="tc-iconbtn" id="notifBtn" type="button" title="{{ t('notifications') }}" aria-haspopup="true" aria-expanded="false" style="position:relative">
+          ◉<span class="tc-badge" id="notifBadge" hidden></span>
+        </button>
+        <div class="tc-notif-pop" id="notifPop" hidden role="menu">
+          <div class="tc-notif-pop__head"><b>{{ t('notifications') }}</b>
+            <form method="post" action="{{ url_for('main.notifications_read') }}">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <button class="tc-btn tc-btn--ghost tc-btn--sm">{{ t('mark_all_read') }}</button>
+            </form>
+          </div>
+          <div class="tc-notif-pop__body" id="notifList"></div>
+          <a class="tc-notif-pop__foot" href="{{ url_for('main.notifications') }}">{{ t('view_all') }}</a>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-btn tc-btn--ghost" title="{{ t('logout') }}">{{ t('logout') }}</button>
+      </form>
+    </header>
+
+    <div class="tc-content">
+      {% with msgs = get_flashed_messages() %}{% if msgs %}
+        {% for m in msgs %}
+          {% if m.startswith('created:') %}{% set parts = m.split(':') %}
+          <div class="tc-alert tc-alert--ok"><b>{{ t('user_created') }}</b> — {{ parts[1] }} · {{ t('password') }}: <span class="tc-mono">{{ parts[2] }}</span></div>
+          {% elif m.startswith('enrolled:') %}{% set parts = m.split(':') %}
+          <div class="tc-alert tc-alert--ok"><b>{{ t('endpoint_enrolled') }}</b> — {{ parts[1] }} · {{ t('token') }}: <span class="tc-mono">{{ parts[2] }}</span><br><small class="tc-faint">{{ t('token_once') }}</small></div>
+          {% else %}<div class="tc-alert">{{ t(m) }}</div>{% endif %}
+        {% endfor %}
+      {% endif %}{% endwith %}
+      {% block breadcrumb %}{% endblock %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+<script>
+(function(){
+  var mb=document.getElementById('menuBtn');
+  if(mb) mb.addEventListener('click',function(){document.getElementById('sidebar').classList.toggle('is-open');});
+  var btn=document.getElementById('notifBtn'), pop=document.getElementById('notifPop'),
+      badge=document.getElementById('notifBadge'), list=document.getElementById('notifList');
+  var SEV={critical:'#C2483C',warning:'#C98A2E',info:'#4A78B0'};
+  var lastUnread=-1;
+  function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function render(d){
+    if(!list) return;
+    if(!d.items||!d.items.length){ list.innerHTML='<div class="tc-empty" style="padding:26px"><p>{{ t("all_read") }}</p></div>'; return; }
+    list.innerHTML=d.items.map(function(n){
+      return '<a class="tc-notif-item'+(n.is_read?' is-read':'')+'" href="'+esc(n.link||'#')+'">'
+        +'<span class="tc-sevdot" style="background:'+(SEV[n.severity]||'var(--brand-grey)')+'"></span>'
+        +'<span class="tc-notif-item__t"><b>'+esc(n.title)+'</b><small>'+esc(n.message)+'</small></span>'
+        +'<time>'+esc((n.created_at||'').slice(0,16))+'</time></a>';
+    }).join('');
+  }
+  function toast(n){
+    if(!n) return;
+    var el=document.createElement('div'); el.className='tc-toast';
+    el.innerHTML='<span class="tc-sevdot" style="background:'+(SEV[n.severity]||'var(--brand-grey)')+'"></span>'
+      +'<span class="tc-toast__t"><b>'+esc(n.title)+'</b><small>'+esc(n.message)+'</small></span>';
+    document.body.appendChild(el);
+    requestAnimationFrame(function(){el.classList.add('show');});
+    var kill=function(){el.classList.remove('show');setTimeout(function(){el.remove();},300);};
+    setTimeout(kill,6000);
+    el.addEventListener('click',function(){ if(n.link) location=n.link; else kill(); });
+  }
+  function refresh(open){
+    fetch("{{ url_for('main.notif_list') }}").then(function(r){return r.json();}).then(function(d){
+      if(badge){ if(d.unread>0){badge.textContent=d.unread>99?'99+':d.unread;badge.hidden=false;} else {badge.hidden=true;} }
+      if(open) render(d);
+      if(lastUnread>=0 && d.unread>lastUnread && d.items && d.items[0]) toast(d.items[0]);
+      lastUnread=d.unread;
+    }).catch(function(){});
+  }
+  if(btn&&pop){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var willOpen=pop.hidden;
+      pop.hidden=!willOpen; btn.setAttribute('aria-expanded',willOpen?'true':'false');
+      if(willOpen) refresh(true);
+    });
+    document.addEventListener('click',function(e){ if(!pop.hidden&&!pop.contains(e.target)&&e.target!==btn){ pop.hidden=true; btn.setAttribute('aria-expanded','false'); }});
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!pop.hidden){ pop.hidden=true; btn.setAttribute('aria-expanded','false'); }});
+  }
+  refresh(false);
+  setInterval(function(){ refresh(pop&&!pop.hidden); }, 30000);
+})();
+</script>
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir_ }}" data-theme="{{ theme }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ code }} · {{ org }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tc-brand.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+<div style="min-height:100vh;display:grid;place-items:center;padding:24px">
+  <div class="tc-hero" style="max-width:520px;text-align:center">
+    <img src="{{ url_for('static', filename='img/logo-mark-white.png') }}" alt="{{ org }}" style="height:56px;margin:0 auto 20px;display:block">
+    <div class="tc-numeral" style="font-size:72px;color:#fff">{{ code }}</div>
+    <p style="color:var(--brand-silver);margin:8px 0 20px">{{ t(msg) }}</p>
+    <a class="tc-btn tc-btn--primary" href="{{ url_for('main.dashboard') }}">{{ t('dashboard') }}</a>
+  </div>
+</div>
+</body>
+</html>

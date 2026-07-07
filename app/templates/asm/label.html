@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ a['asset_id'] }} · {{ t('print_label') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>02</b> · {{ t('mod_asm') }} · <span class="tc-mono">{{ a['asset_id'] }}</span></span>
+    <h1 class="tc-h1">{{ t('print_label') }}</h1>
+  </div>
+  <div class="tc-btnbar">
+    <button class="tc-btn tc-btn--primary" onclick="window.print()">⧉ {{ t('print_label') }}</button>
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('asm.view', asset_id=a['asset_id']) }}">← {{ t('back') }}</a>
+  </div>
+</div>
+
+<div class="tc-label-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="{{ org }}" style="height:30px">
+    <b style="font-size:11px;letter-spacing:.16em;color:#555">{{ org }}</b>
+  </div>
+  <div class="tc-barcode">
+    {% for w in bars %}<i style="width:{{ w*2 }}px"></i><i style="width:2px;background:transparent"></i>{% endfor %}
+  </div>
+  <div class="code">{{ a['asset_id'] }}</div>
+  <div style="font-size:13px;color:#222;margin-top:4px">{{ a['name'] }}</div>
+  <div style="font-size:11px;color:#555;margin-top:8px;display:flex;justify-content:space-between">
+    <span>{{ a['category'] }} · {{ a['brand'] }}</span><span>{{ a['site'] }}</span>
+  </div>
+  {% if a['custodian'] %}<div style="font-size:11px;color:#555">{{ t('custodian') }}: {{ a['custodian'] }}</div>{% endif %}
+</div>
+{% endblock %}
