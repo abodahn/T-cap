@@ -76,6 +76,10 @@ class Config:
     SEED_DEMO = _bool(os.getenv("TCAP_SEED_DEMO"), True)  # default on for a fresh eval build
     DEMO_PASSWORD = os.getenv("TCAP_DEMO_PASSWORD", "Demo@2026")
 
+    # Self-service signup. New accounts always get the lowest role (never admin).
+    ALLOW_SIGNUP = _bool(os.getenv("TCAP_ALLOW_SIGNUP"), True)
+    SIGNUP_ROLE = os.getenv("TCAP_SIGNUP_ROLE", "employee")
+
     # i18n
     DEFAULT_LANG = os.getenv("TCAP_DEFAULT_LANG", "en")
     LANGUAGES = ("en", "ar")

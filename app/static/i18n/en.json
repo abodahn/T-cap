@@ -252,5 +252,13 @@
   "security_prefs": "Security",
   "item_code_taken": "That item code already exists.",
   "install_app": "Install app",
-  "switch_theme": "Switch theme"
+  "switch_theme": "Switch theme",
+  "create_account": "Create account",
+  "create_account_sub": "Set up your T-Group access in seconds.",
+  "signup_hero": "Join the command center.",
+  "signup_sub": "Create your account and start working across IT service, assets and monitoring — in one console.",
+  "joins_as": "You'll join as",
+  "have_account": "Already have an account?",
+  "no_account": "New here?",
+  "username_invalid": "Username can only contain letters, numbers, dot and underscore."
 }

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ t('create_account') }}{% endblock %}
+{% block auth_content %}
+<div class="tc-login">
+  <div class="tc-login__brand tc-hero">
+    <img src="{{ url_for('static', filename='img/logo-lockup-white.png') }}" alt="{{ org }}" class="tc-login__logo">
+    <div class="tc-eyebrow" style="margin-top:28px">{{ t('app_name') }}</div>
+    <h1>{{ t('signup_hero') }}</h1>
+    <p>{{ t('signup_sub') }}</p>
+    <div class="tc-login__mods">
+      <span><b>01</b> {{ t('mod_itsm') }}</span>
+      <span><b>02</b> {{ t('mod_asm') }}</span>
+      <span><b>03</b> {{ t('mod_monitoring') }}</span>
+    </div>
+  </div>
+  <div class="tc-login__form">
+    <div class="tc-login__card">
+      <div class="tc-login__top">
+        <img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" class="tc-login__mark">
+        <form method="post" action="{{ url_for('auth.set_lang', lang='ar' if lang=='en' else 'en') }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="tc-btn tc-btn--ghost tc-btn--sm">{{ 'العربية' if lang=='en' else 'English' }}</button>
+        </form>
+      </div>
+      <h2>{{ t('create_account') }}</h2>
+      <p class="tc-muted">{{ t('create_account_sub') }}</p>
+      {% if error %}<div class="tc-alert tc-alert--danger">{{ t(error) }}</div>{% endif %}
+      <form method="post" action="{{ url_for('auth.signup') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="tc-field">
+          <label class="tc-label" for="fn">{{ t('name') }}</label>
+          <input class="tc-input" id="fn" name="full_name" autocomplete="name" required autofocus>
+        </div>
+        <div class="tc-field">
+          <label class="tc-label" for="u">{{ t('username') }}</label>
+          <input class="tc-input" id="u" name="username" autocomplete="username" required>
+        </div>
+        <div class="tc-field">
+          <label class="tc-label" for="e">{{ t('email') }}</label>
+          <input class="tc-input" id="e" name="email" type="email" autocomplete="email">
+        </div>
+        <div class="tc-field">
+          <label class="tc-label" for="p">{{ t('password') }}</label>
+          <input class="tc-input" id="p" name="password" type="password" autocomplete="new-password" minlength="8" required>
+        </div>
+        <button class="tc-btn tc-btn--primary tc-btn--block" type="submit">{{ t('create_account') }}</button>
+      </form>
+      <p class="tc-muted" style="font-size:var(--fs-sm);margin-top:14px;text-align:center">
+        {{ t('joins_as') }} <b>{{ role_label }}</b>
+      </p>
+      <p style="text-align:center;margin-top:16px">
+        <span class="tc-faint">{{ t('have_account') }}</span>
+        <a href="{{ url_for('auth.login') }}" class="tc-idlink" style="font-weight:700">{{ t('sign_in') }}</a>
+      </p>
+    </div>
+    <p class="tc-login__foot tc-muted">© {{ year }} {{ org }} · {{ t('control_suite') }}</p>
+  </div>
+</div>
+{% endblock %}

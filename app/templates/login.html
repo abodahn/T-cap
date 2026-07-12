@@ -44,6 +44,12 @@
         <button class="tc-btn tc-btn--primary tc-btn--block" type="submit">{{ t('sign_in') }}</button>
       </form>
       <button type="button" data-install class="tc-btn tc-btn--ghost tc-btn--block" style="margin-top:12px">⤓&nbsp; {{ t('install_app') }}</button>
+      {% if allow_signup %}
+      <p style="text-align:center;margin-top:16px">
+        <span class="tc-faint">{{ t('no_account') }}</span>
+        <a href="{{ url_for('auth.signup') }}" class="tc-idlink" style="font-weight:700">{{ t('create_account') }}</a>
+      </p>
+      {% endif %}
     </div>
     <p class="tc-login__foot tc-muted">© {{ year }} {{ org }} · {{ t('control_suite') }}</p>
   </div>
