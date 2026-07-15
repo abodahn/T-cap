@@ -33,10 +33,11 @@ services:
       # HTTPS on Render → keep secure cookies on.
       - key: TCAP_COOKIE_SECURE
         value: "true"
-      # Seed demo role accounts (password Demo@2026) so visitors can try each role.
-      # Set to "false" for a private/production instance.
+      # Sample/demo content (demo role accounts + example tickets, assets,
+      # endpoints, notifications). "false" = a clean instance with only the admin
+      # account, master data (companies/sites), RBAC and alert-rule defaults.
       - key: TCAP_SEED_DEMO
-        value: "true"
+        value: "false"
       - key: TCAP_DEFAULT_LANG
         value: en
       - key: TCAP_DEFAULT_THEME

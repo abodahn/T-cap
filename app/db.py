@@ -203,8 +203,8 @@ def _seed(conn):
             for p in (_P if "*" in ps else ps):
                 conn.execute("INSERT OR IGNORE INTO role_perms(role,perm) VALUES(?,?)", (r, p))
 
-    # --- ITSM tickets ---
-    if conn.execute("SELECT COUNT(*) AS c FROM tickets").fetchone()["c"] == 0:
+    # --- ITSM tickets (sample data — only when TCAP_SEED_DEMO is on) ---
+    if Config.SEED_DEMO and conn.execute("SELECT COUNT(*) AS c FROM tickets").fetchone()["c"] == 0:
         now = datetime.now(timezone.utc)
         samples = [
             ("ERP login failure at Factory 2", "Software", "Critical", "New", "Nour Tarek", "Production", "Textile Factory", "Omar Khaled", "AST-000004"),
@@ -291,8 +291,8 @@ def _seed(conn):
                     "INSERT INTO ticket_events(ticket_id,actor,kind,summary,created_at) VALUES(?,?,?,?,?)",
                     (row["id"], "Service Desk", "system", "First response recorded", fra))
 
-    # --- ASM assets & stock ---
-    if conn.execute("SELECT COUNT(*) AS c FROM assets").fetchone()["c"] == 0:
+    # --- ASM assets & stock (sample data — only when TCAP_SEED_DEMO is on) ---
+    if Config.SEED_DEMO and conn.execute("SELECT COUNT(*) AS c FROM assets").fetchone()["c"] == 0:
         now = datetime.now(timezone.utc)
         assets = [
             ("Dell PowerEdge R750 Server", "Server", "Dell", "R750", "SN-SRV-001", "T-Group Automotive", "Head Office", "IT", "Hassan Ali", "Assigned", 220, 40),
@@ -356,8 +356,8 @@ def _seed(conn):
                    min_stock,warehouse,created_at) VALUES(?,?,?,?,?,?,?,?)""",
                 (code, name, cat, uom, qty, mins, wh, utcnow()))
 
-    # --- Monitoring endpoints & alerts ---
-    if conn.execute("SELECT COUNT(*) AS c FROM endpoints").fetchone()["c"] == 0:
+    # --- Monitoring endpoints & alerts (sample data — only when TCAP_SEED_DEMO is on) ---
+    if Config.SEED_DEMO and conn.execute("SELECT COUNT(*) AS c FROM endpoints").fetchone()["c"] == 0:
         now = datetime.now(timezone.utc)
         eps = [
             ("HQ-SRV-01", "10.0.0.10", "Windows Server 2022", "Head Office", "IT", "online", 78, 64, 55, 720, "AST-000001"),
@@ -414,8 +414,8 @@ def _seed(conn):
             conn.execute("INSERT INTO mon_rules(metric,label,warn,crit,enabled) VALUES(?,?,?,?,1)",
                          (metric, label, w, c))
 
-    # --- notifications ---
-    if conn.execute("SELECT COUNT(*) AS c FROM notifications").fetchone()["c"] == 0:
+    # --- notifications (sample data — only when TCAP_SEED_DEMO is on) ---
+    if Config.SEED_DEMO and conn.execute("SELECT COUNT(*) AS c FROM notifications").fetchone()["c"] == 0:
         for sev, mod, title, msg, link in [
             ("critical", "monitoring", "Server room temperature high", "HQ-SRV-01 reported 34C", "/monitoring"),
             ("warning", "asm", "Stock below minimum", "HP 58A Toner is below reorder level", "/asm/stock"),
