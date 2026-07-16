@@ -1,4 +1,12 @@
-"""T-CAP persistence — stdlib sqlite3, no ORM. Schema + idempotent seed."""
+"""T-CAP persistence — no ORM.
+
+Speaks SQLite (local dev) or PostgreSQL (production, e.g. Render) behind ONE
+connection API: `db.execute(sql, params)` with `?` placeholders, `.commit()`.
+All dialect differences live in this file, so the routes never change.
+
+Set DATABASE_URL to a postgres:// URL and data persists across restarts/deploys.
+"""
+import re
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
@@ -8,17 +16,91 @@ from werkzeug.security import generate_password_hash
 from config import Config
 from app.security import ROLE_LABELS
 
+IS_PG = Config.DATABASE_URL.startswith(("postgres://", "postgresql://"))
+
 
 def utcnow():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
+# ---------------------------------------------------------------- dialect ----
+# Timestamps are stored as TEXT 'YYYY-MM-DD HH:MM:SS' (UTC) in both engines, so
+# the SQLite date helpers must produce the same text shape on PostgreSQL.
+_PG_NOW_TS = "to_char((now() at time zone 'utc'),'YYYY-MM-DD HH24:MI:SS')"
+_PG_NOW_DATE = "to_char((now() at time zone 'utc'),'YYYY-MM-DD')"
+
+
+def _dsn():
+    u = Config.DATABASE_URL
+    if u.startswith("postgres://"):          # legacy scheme psycopg2 rejects
+        u = "postgresql://" + u[len("postgres://"):]
+    return u
+
+
+def translate(sql):
+    """SQLite SQL -> PostgreSQL SQL (statements only, not DDL)."""
+    sql = sql.replace("datetime('now')", _PG_NOW_TS).replace("date('now')", _PG_NOW_DATE)
+    if "INSERT OR IGNORE INTO" in sql:
+        sql = sql.replace("INSERT OR IGNORE INTO", "INSERT INTO")
+        if "ON CONFLICT" not in sql.upper():
+            sql = sql.rstrip().rstrip(";") + " ON CONFLICT DO NOTHING"
+    return sql.replace("?", "%s")            # placeholders last
+
+
+def translate_ddl(sql):
+    """SQLite schema -> PostgreSQL schema."""
+    sql = re.sub(r"INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT", "SERIAL PRIMARY KEY", sql, flags=re.I)
+    return sql
+
+
+class _PgConn:
+    """Minimal sqlite3-compatible wrapper over psycopg2 (rows index by name AND
+    position, matching sqlite3.Row usage across the app)."""
+
+    def __init__(self):
+        import psycopg2
+        import psycopg2.extras
+        self._c = psycopg2.connect(_dsn(), cursor_factory=psycopg2.extras.DictCursor)
+
+    def execute(self, sql, params=()):
+        cur = self._c.cursor()
+        # params=None => psycopg2 skips %-interpolation (safe for literal %)
+        cur.execute(translate(sql), tuple(params) if params else None)
+        return cur
+
+    def executescript(self, sql):
+        cur = self._c.cursor()
+        cur.execute(translate_ddl(sql))
+        self._c.commit()
+
+    def commit(self):
+        self._c.commit()
+
+    def rollback(self):
+        try:
+            self._c.rollback()
+        except Exception:
+            pass
+
+    def close(self):
+        try:
+            self._c.close()
+        except Exception:
+            pass
+
+
+def _connect():
+    if IS_PG:
+        return _PgConn()
+    conn = sqlite3.connect(str(Config.DB_PATH))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
 def get_db():
     if "db" not in g:
-        conn = sqlite3.connect(str(Config.DB_PATH))
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        g.db = conn
+        g.db = _connect()
     return g.db
 
 
@@ -100,20 +182,31 @@ _TICKET_MIGRATIONS = [
 ]
 
 
+def _columns(conn, table):
+    if IS_PG:
+        rows = conn.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name=?", (table,)).fetchall()
+        return {r[0] for r in rows}
+    return {r["name"] for r in conn.execute("PRAGMA table_info(%s)" % table).fetchall()}
+
+
 def _migrate(conn):
-    have = {r["name"] for r in conn.execute("PRAGMA table_info(tickets)").fetchall()}
+    have = _columns(conn, "tickets")
     for col, ddl in _TICKET_MIGRATIONS:
         if col not in have:
             try:
-                conn.execute(f"ALTER TABLE tickets ADD COLUMN {col} {ddl}")
+                conn.execute("ALTER TABLE tickets ADD COLUMN %s %s" % (col, ddl))
+                conn.commit()
             except Exception:
-                pass
+                # On PostgreSQL a failed statement aborts the transaction —
+                # roll back so the following statements still run.
+                if hasattr(conn, "rollback"):
+                    conn.rollback()
     conn.commit()
 
 
 def init_db():
-    conn = sqlite3.connect(str(Config.DB_PATH))
-    conn.row_factory = sqlite3.Row
+    conn = _connect()
     try:
         conn.executescript(SCHEMA)
         conn.commit()

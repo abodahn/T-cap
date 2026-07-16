@@ -58,6 +58,10 @@ class Config:
     HOST = os.getenv("TCAP_HOST", "0.0.0.0")
     PORT = int(os.getenv("PORT", os.getenv("TCAP_PORT", "8080")))
 
+    # Storage. If DATABASE_URL is a postgres:// URL (Render injects this when a
+    # database is attached), T-CAP uses PostgreSQL and data persists across
+    # restarts/deploys. Otherwise it falls back to a local SQLite file.
+    DATABASE_URL = (os.getenv("DATABASE_URL", "") or "").strip()
     DB_PATH = Path(os.getenv("TCAP_DB_PATH", str(INSTANCE_DIR / "tcap.db")))
 
     # Session cookie: Secure by default (HTTPS/prod). For plain-HTTP local

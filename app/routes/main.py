@@ -8,7 +8,10 @@ bp = Blueprint("main", __name__)
 
 @bp.route("/healthz")
 def healthz():
-    return jsonify(status="ok", app="t-cap")
+    from app.db import IS_PG
+    # `storage` tells you whether data is persistent (postgres) or ephemeral
+    # (sqlite on a container filesystem — wiped on restart/deploy).
+    return jsonify(status="ok", app="t-cap", storage=("postgres" if IS_PG else "sqlite"))
 
 
 @bp.route("/sw.js")

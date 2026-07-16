@@ -4,6 +4,7 @@ Werkzeug==3.0.3
 python-dotenv==1.0.1
 openpyxl==3.1.5          # Excel (.xlsx) exports
 reportlab==4.2.2         # branded PDF reports
+psycopg2-binary==2.9.9   # PostgreSQL (used when DATABASE_URL is set)
 # Production WSGI servers:
 gunicorn==22.0.0 ; sys_platform != "win32"   # Render / Linux
 waitress==3.0.0 ; sys_platform == "win32"    # Windows

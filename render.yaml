@@ -1,10 +1,17 @@
 # T-CAP — Render Blueprint. Deploy: push to GitHub, then Render → New → Blueprint,
 # point it at this repo. Render reads this file and provisions the service.
 #
-# Storage note: on the free plan the filesystem is EPHEMERAL — the SQLite database
-# is re-created and re-seeded (demo data) on every deploy/restart, which is ideal
-# for a showcase. To PERSIST data across deploys, upgrade to a paid plan and
-# uncomment the `disk:` block below (mounts a real disk and points the DB at it).
+# Storage: a managed PostgreSQL database is provisioned below and its connection
+# string is injected as DATABASE_URL. Data therefore lives OUTSIDE the container
+# and survives sleep, restarts and deploys. (Without DATABASE_URL the app falls
+# back to a local SQLite file, which on the free plan is wiped on every restart.)
+# Note: Render's free Postgres expires ~90 days after creation.
+
+databases:
+  - name: tcap-db
+    plan: free
+    databaseName: tcap
+    user: tcap
 
 services:
   - type: web
@@ -17,6 +24,11 @@ services:
     healthCheckPath: /healthz
     autoDeploy: true
     envVars:
+      # Managed PostgreSQL — makes data permanent (survives sleep + deploys).
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tcap-db
+          property: connectionString
       - key: PYTHON_VERSION
         value: "3.12.5"
       - key: TCAP_ENV
