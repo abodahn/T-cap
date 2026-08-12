@@ -21,6 +21,17 @@ def _stamp_first_response(db, t):
         db.execute("UPDATE tickets SET first_response_at=? WHERE id=?", (utcnow(), t["id"]))
 
 
+def _own_scope(u):
+    """Ticket visibility filter. Agents / oversight roles (itsm_edit or
+    reports_view) see every ticket; everyone else (i.e. employees) sees only
+    tickets they raised or are assigned to. Returns (sql_fragment, params).
+    ponytail: matches on full_name like the rest of the module; add a
+    requester_id column if two users ever share a name."""
+    if user_can("itsm_edit") or user_can("reports_view"):
+        return "", []
+    return " AND (requester=? OR assigned_agent=?)", [u["full_name"], u["full_name"]]
+
+
 @bp.route("/")
 @permission_required("itsm_view")
 def index():
@@ -30,8 +41,9 @@ def index():
     scope = request.args.get("scope") or ""
     q = (request.args.get("q") or "").strip()
     u = current_user()
-    sql = "SELECT * FROM tickets WHERE 1=1"
-    p = []
+    own_sql, own_p = _own_scope(u)
+    sql = "SELECT * FROM tickets WHERE 1=1" + own_sql
+    p = list(own_p)
     if status:
         sql += " AND status=?"; p.append(status)
     if priority:
@@ -50,14 +62,14 @@ def index():
         if scope == "breached" and not sla["breached"]:
             continue
         tickets.append({"r": r, "sla": sla})
-    counts = {"": db.execute("SELECT COUNT(*) FROM tickets").fetchone()[0]}
+    counts = {"": db.execute("SELECT COUNT(*) FROM tickets WHERE 1=1" + own_sql, own_p).fetchone()[0]}
     for s in core.STATUSES:
-        c = db.execute("SELECT COUNT(*) FROM tickets WHERE status=?", (s,)).fetchone()[0]
+        c = db.execute("SELECT COUNT(*) FROM tickets WHERE status=?" + own_sql, [s] + own_p).fetchone()[0]
         if c:
             counts[s] = c
     scope_counts = {
         "mine": db.execute("SELECT COUNT(*) FROM tickets WHERE assigned_agent=? AND status NOT IN ('Resolved','Closed','Cancelled')", (u["full_name"],)).fetchone()[0],
-        "unassigned": db.execute("SELECT COUNT(*) FROM tickets WHERE (assigned_agent IS NULL OR assigned_agent='') AND status NOT IN ('Resolved','Closed','Cancelled')").fetchone()[0],
+        "unassigned": db.execute("SELECT COUNT(*) FROM tickets WHERE (assigned_agent IS NULL OR assigned_agent='') AND status NOT IN ('Resolved','Closed','Cancelled')" + own_sql, own_p).fetchone()[0],
     }
     return render_template("itsm/list.html", tickets=tickets, statuses=core.STATUSES,
                            priorities=core.PRIORITIES, f_status=status, f_priority=priority,
@@ -71,7 +83,8 @@ def export_xlsx():
     status = request.args.get("status") or ""
     priority = request.args.get("priority") or ""
     q = (request.args.get("q") or "").strip()
-    sql = "SELECT * FROM tickets WHERE 1=1"; p = []
+    own_sql, own_p = _own_scope(current_user())
+    sql = "SELECT * FROM tickets WHERE 1=1" + own_sql; p = list(own_p)
     if status:
         sql += " AND status=?"; p.append(status)
     if priority:
@@ -165,6 +178,10 @@ def view(ref):
     t = db.execute("SELECT * FROM tickets WHERE ref=?", (ref,)).fetchone()
     if not t:
         abort(404)
+    if not (user_can("itsm_edit") or user_can("reports_view")):
+        name = current_user()["full_name"]
+        if t["requester"] != name and t["assigned_agent"] != name:
+            abort(403)
     sla = core.compute_sla(t)
     internal_ok = user_can("itsm_edit")
     if internal_ok:
