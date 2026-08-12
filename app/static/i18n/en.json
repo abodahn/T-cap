@@ -260,5 +260,6 @@
   "joins_as": "You'll join as",
   "have_account": "Already have an account?",
   "no_account": "New here?",
-  "username_invalid": "Username can only contain letters, numbers, dot and underscore."
+  "username_invalid": "Username can only contain letters, numbers, dot and underscore.",
+  "confirm_delete_user": "Permanently delete user"
 }

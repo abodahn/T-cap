@@ -113,6 +113,22 @@ def toggle_user(uid):
     return redirect(url_for("admin.users"))
 
 
+@bp.route("/users/<int:uid>/delete", methods=["POST"])
+@permission_required("manage_users")
+def user_delete(uid):
+    db = get_db()
+    u = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    if not u:
+        abort(404)
+    # Guard: never delete a super admin or yourself.
+    if u["role"] == "super_admin" or u["id"] == current_user()["id"]:
+        return redirect(url_for("admin.users"))
+    db.execute("DELETE FROM users WHERE id=?", (uid,))
+    db.commit()
+    log_audit(current_user()["username"], "user_delete", u["username"])
+    return redirect(url_for("admin.users"))
+
+
 @bp.route("/roles")
 @permission_required("admin_access")
 def roles():
