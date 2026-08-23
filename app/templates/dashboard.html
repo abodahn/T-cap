@@ -16,6 +16,26 @@
   </a>
 </section>
 
+{% if announcements %}
+<div class="tc-card" style="margin-bottom:var(--space-6)">
+  <div class="tc-card__head">
+    <h3 style="margin:0">📢 {{ t('hr_announcements') }}</h3>
+    <a class="tc-btn tc-btn--ghost tc-btn--sm" href="{{ url_for('hr.announcements') }}">{{ t('view_all') }}</a>
+  </div>
+  <div class="tc-card__body tc-stack">
+    {% for a in announcements %}
+    <div style="padding:4px 0{% if not loop.last %};border-bottom:var(--line);padding-bottom:12px{% endif %}">
+      <div class="tc-flex" style="justify-content:space-between;gap:12px;align-items:baseline">
+        <b>{% if a['pinned'] %}📌 {% endif %}{{ a['title'] }}</b>
+        <small class="tc-faint tc-mono">{{ a['created_at'][:10] }}</small>
+      </div>
+      <p class="tc-muted" style="margin:4px 0 0;white-space:pre-wrap">{{ a['body']|truncate(180) }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="tc-kpi-grid" style="margin-bottom:var(--space-6)">
   <a class="tc-kpi" href="{{ url_for('itsm.index') }}"><div class="tc-kpi__label">{{ t('open_tickets') }}</div><div class="tc-kpi__value">{{ kpis.open_tickets }}</div><div class="tc-kpi__foot tc-muted">{{ t('view_all') }} →</div></a>
   <a class="tc-kpi" href="{{ url_for('itsm.index', scope='breached') }}"><div class="tc-kpi__label">{{ t('sla_compliance') }}</div><div class="tc-kpi__value">{{ kpis.sla }}%</div><div class="tc-kpi__foot">{% if kpis.breached %}<span class="tc-chip tc-chip--danger">{{ kpis.breached }} {{ t('breached') }}</span>{% else %}<span class="tc-chip tc-chip--success">OK</span>{% endif %}</div></a>

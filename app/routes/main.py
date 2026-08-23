@@ -78,9 +78,12 @@ def dashboard():
         d = (date.today() - timedelta(days=i)).isoformat()
         per_day.append(db.execute(
             "SELECT COUNT(*) FROM tickets WHERE substr(created_at,1,10)=?", (d,)).fetchone()[0])
+    announcements = db.execute(
+        "SELECT * FROM hr_announcements ORDER BY pinned DESC, created_at DESC LIMIT 3").fetchall()
     return render_template("dashboard.html", kpis=kpis, recent_tickets=recent_tickets,
                            alerts=alerts, prio=prio, status_dist=status_dist,
-                           cat_dist=cat_dist, ep_dist=ep_dist, per_day=per_day)
+                           cat_dist=cat_dist, ep_dist=ep_dist, per_day=per_day,
+                           announcements=announcements)
 
 
 @bp.route("/reports")
