@@ -1,6 +1,7 @@
 import datetime as _dt
+import os as _os
 
-from flask import Flask, session, g, render_template, request
+from flask import Flask, session, g, render_template, request, url_for
 
 from config import Config
 from app import db as dbm
@@ -64,10 +65,20 @@ def create_app():
         resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         return resp
 
+    def _static_v(filename):
+        """Static URL with a cache-busting ?v=<mtime> so CSS/JS changes reach
+        users immediately after a deploy instead of waiting out the 12h cache."""
+        try:
+            v = int(_os.path.getmtime(_os.path.join(app.static_folder, filename)))
+        except OSError:
+            v = 0
+        return url_for("static", filename=filename, v=v)
+
     @app.context_processor
     def _inject():
         lang = get_lang()
         return dict(
+            sv=_static_v,
             t=translate, lang=lang, is_rtl=is_rtl(lang),
             dir_="rtl" if is_rtl(lang) else "ltr",
             user=current_user(), user_can=user_can,
