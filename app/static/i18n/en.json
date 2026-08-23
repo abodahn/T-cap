@@ -432,5 +432,6 @@
   "hr_card_leave": "Request time off and track approvals.",
   "hr_emp_new": "Add employee",
   "hr_emp_edit": "Edit employee",
-  "hr_emp_name_required": "Employee name is required."
+  "hr_emp_name_required": "Employee name is required.",
+  "hr_manager": "Manager"
 }

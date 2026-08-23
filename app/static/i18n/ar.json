@@ -432,5 +432,6 @@
   "hr_card_leave": "اطلب إجازة وتابع الاعتمادات.",
   "hr_emp_new": "إضافة موظف",
   "hr_emp_edit": "تعديل موظف",
-  "hr_emp_name_required": "اسم الموظف مطلوب."
+  "hr_emp_name_required": "اسم الموظف مطلوب.",
+  "hr_manager": "المدير"
 }
