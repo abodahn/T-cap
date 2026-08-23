@@ -3,6 +3,7 @@
   <a class="{{ 'on' if active=='me' }}" href="{{ url_for('hr.me') }}">{{ t('hr_my_hr') }}</a>
   <a class="{{ 'on' if active=='cases' }}" href="{{ url_for('hr.cases') }}">{{ t('hr_requests') }}</a>
   <a class="{{ 'on' if active=='leave' }}" href="{{ url_for('hr.leave') }}">{{ t('hr_leave') }}</a>
+  <a class="{{ 'on' if active=='attendance' }}" href="{{ url_for('hr.attendance') }}">{{ t('hr_attendance') }}</a>
   <a class="{{ 'on' if active=='announcements' }}" href="{{ url_for('hr.announcements') }}">{{ t('hr_announcements') }}</a>
   <a class="{{ 'on' if active=='policies' }}" href="{{ url_for('hr.policies') }}">{{ t('hr_policies') }}</a>
   {% if user_can('hr_view_all') %}

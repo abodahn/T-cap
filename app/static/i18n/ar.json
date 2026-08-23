@@ -433,5 +433,22 @@
   "hr_emp_new": "إضافة موظف",
   "hr_emp_edit": "تعديل موظف",
   "hr_emp_name_required": "اسم الموظف مطلوب.",
-  "hr_manager": "المدير"
+  "hr_manager": "المدير",
+  "hr_attendance": "الحضور",
+  "hr_my_attendance": "حضوري",
+  "hr_att_manual": "إدخال يدوي",
+  "hr_att_manual_help": "أضف أو صحّح سجل حضور لأي موظف وتاريخ.",
+  "hr_today": "اليوم",
+  "hr_checked_in": "سجّل حضور",
+  "hr_checked_out": "سجّل انصراف",
+  "hr_not_checked_in": "لم تسجّل حضورك بعد.",
+  "hr_check_in": "تسجيل حضور",
+  "hr_check_out": "تسجيل انصراف",
+  "hr_done_today": "انتهى ليومك",
+  "hr_present": "حاضر",
+  "hr_hours": "الساعات",
+  "hr_date": "التاريخ",
+  "hr_no_attendance": "لا توجد سجلات حضور.",
+  "hr_att_invalid": "من فضلك اختر موظفًا وتاريخًا.",
+  "hr_card_attendance": "سجّل الحضور والانصراف وتابع ساعات العمل."
 }

@@ -433,5 +433,22 @@
   "hr_emp_new": "Add employee",
   "hr_emp_edit": "Edit employee",
   "hr_emp_name_required": "Employee name is required.",
-  "hr_manager": "Manager"
+  "hr_manager": "Manager",
+  "hr_attendance": "Attendance",
+  "hr_my_attendance": "My attendance",
+  "hr_att_manual": "Manual entry",
+  "hr_att_manual_help": "Add or correct an attendance record for any employee and date.",
+  "hr_today": "Today",
+  "hr_checked_in": "Checked in",
+  "hr_checked_out": "checked out",
+  "hr_not_checked_in": "You haven't checked in yet.",
+  "hr_check_in": "Check in",
+  "hr_check_out": "Check out",
+  "hr_done_today": "Done for today",
+  "hr_present": "present",
+  "hr_hours": "Hours",
+  "hr_date": "Date",
+  "hr_no_attendance": "No attendance records.",
+  "hr_att_invalid": "Please choose an employee and date.",
+  "hr_card_attendance": "Check in/out and track working hours."
 }

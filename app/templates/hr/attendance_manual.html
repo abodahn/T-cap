@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_att_manual') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · {{ t('hr_attendance') }}</span><h1 class="tc-h1">{{ t('hr_att_manual') }}</h1></div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.attendance') }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-card" style="max-width:640px"><div class="tc-card__body">
+  <p class="tc-faint" style="margin-top:0">{{ t('hr_att_manual_help') }}</p>
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="tc-field"><label class="tc-label">{{ t('hr_employee') }}</label>
+      <select class="tc-select" name="employee_id" style="width:100%">{% for e in emps %}<option value="{{ e['id'] }}">{{ e['name_en'] }}</option>{% endfor %}</select></div>
+    <div class="tc-field" style="max-width:220px"><label class="tc-label">{{ t('hr_date') }}</label>
+      <input class="tc-input" type="date" name="date" value="{{ today }}" required></div>
+    <div class="tc-grid-2">
+      <div class="tc-field"><label class="tc-label">{{ t('hr_check_in') }}</label><input class="tc-input" type="time" name="check_in"></div>
+      <div class="tc-field"><label class="tc-label">{{ t('hr_check_out') }}</label><input class="tc-input" type="time" name="check_out"></div>
+    </div>
+    <div class="tc-field" style="max-width:220px"><label class="tc-label">{{ t('status') }}</label>
+      <select class="tc-select" name="status">{% for s in statuses %}<option value="{{ s }}" {{ 'selected' if s=='Present' }}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_status_notes') }}</label><input class="tc-input" name="notes" style="width:100%"></div>
+    <button class="tc-btn tc-btn--primary">{{ t('save') }}</button>
+  </form>
+</div></div>
+{% endblock %}

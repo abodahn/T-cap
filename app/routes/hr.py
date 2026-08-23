@@ -955,3 +955,116 @@ def leave_action(lid):
         abort(403)
     db.commit()
     return redirect(url_for("hr.leave_view", lid=lid))
+
+
+# ===========================================================================
+#  Attendance / time tracking
+#  ponytail: timestamps are UTC like the rest of the app; add a TZ offset if a
+#  local wall-clock ever matters. Hours are a duration, so TZ-independent.
+# ===========================================================================
+ATTEND_STATUSES = ["Present", "Late", "Absent", "Leave", "Holiday"]
+
+
+def _att_hours(ci, co):
+    from datetime import datetime
+    try:
+        fmt = "%Y-%m-%d %H:%M:%S"
+        return round((datetime.strptime(co[:19], fmt) - datetime.strptime(ci[:19], fmt)).total_seconds() / 3600, 2)
+    except Exception:
+        return None
+
+
+@bp.route("/attendance")
+@login_required
+def attendance():
+    db = get_db()
+    u = current_user()
+    staff = user_can("hr_view_all")
+    day = request.args.get("date") or utcnow()[:10]
+    emp = _my_employee(u)
+    today = utcnow()[:10]
+    my_today = db.execute("SELECT * FROM attendance WHERE employee_id=? AND date=?",
+                          (emp["id"], today)).fetchone() if emp else None
+    my_recent = db.execute("SELECT * FROM attendance WHERE employee_id=? ORDER BY date DESC LIMIT 14",
+                           (emp["id"],)).fetchall() if emp else []
+    rows = present = total = 0
+    if staff:
+        rows = db.execute("SELECT * FROM attendance WHERE date=? ORDER BY check_in", (day,)).fetchall()
+        present = db.execute("SELECT COUNT(*) FROM attendance WHERE date=? AND status IN ('Present','Late')", (day,)).fetchone()[0]
+        total = db.execute("SELECT COUNT(*) FROM employees WHERE status IS NULL OR status='active'").fetchone()[0]
+    return render_template("hr/attendance.html", staff=staff, day=day, today=today, emp=emp,
+                           my_today=my_today, my_recent=my_recent, rows=rows, present=present,
+                           total=total, statuses=ATTEND_STATUSES)
+
+
+@bp.route("/attendance/checkin", methods=["POST"])
+@login_required
+def attendance_checkin():
+    db = get_db()
+    u = current_user()
+    emp = _my_employee(u)
+    if not emp:
+        flash("hr_no_link")
+        return redirect(url_for("hr.attendance"))
+    today = utcnow()[:10]
+    if not db.execute("SELECT 1 FROM attendance WHERE employee_id=? AND date=?", (emp["id"], today)).fetchone():
+        late = utcnow()[11:16] > "09:00"
+        db.execute("""INSERT INTO attendance(employee_id,employee_name,date,check_in,status,created_by,created_at,updated_at)
+                      VALUES(?,?,?,?,?,?,?,?)""",
+                   (emp["id"], emp["name_en"] or emp["name_ar"], today, utcnow(),
+                    "Late" if late else "Present", u["id"], utcnow(), utcnow()))
+        db.commit()
+        log_audit(u["username"], "attendance_checkin", today)
+    return redirect(url_for("hr.attendance"))
+
+
+@bp.route("/attendance/checkout", methods=["POST"])
+@login_required
+def attendance_checkout():
+    db = get_db()
+    u = current_user()
+    emp = _my_employee(u)
+    if emp:
+        today = utcnow()[:10]
+        rec = db.execute("SELECT * FROM attendance WHERE employee_id=? AND date=?", (emp["id"], today)).fetchone()
+        if rec and not rec["check_out"]:
+            db.execute("UPDATE attendance SET check_out=?, hours=?, updated_at=? WHERE id=?",
+                       (utcnow(), _att_hours(rec["check_in"], utcnow()), utcnow(), rec["id"]))
+            db.commit()
+            log_audit(u["username"], "attendance_checkout", today)
+    return redirect(url_for("hr.attendance"))
+
+
+@bp.route("/attendance/manual", methods=["GET", "POST"])
+@permission_required("hr_manage")
+def attendance_manual():
+    db = get_db()
+    if request.method == "POST":
+        try:
+            eid = int(request.form.get("employee_id") or 0)
+        except ValueError:
+            eid = 0
+        emp = db.execute("SELECT * FROM employees WHERE id=?", (eid,)).fetchone()
+        day = (request.form.get("date") or "").strip()
+        if not emp or not day:
+            flash("hr_att_invalid")
+            return redirect(url_for("hr.attendance_manual"))
+        ci = f"{day} {request.form.get('check_in')}:00" if request.form.get("check_in") else None
+        co = f"{day} {request.form.get('check_out')}:00" if request.form.get("check_out") else None
+        hours = _att_hours(ci, co) if (ci and co) else None
+        status = request.form.get("status") if request.form.get("status") in ATTEND_STATUSES else "Present"
+        notes = (request.form.get("notes") or "").strip()
+        existing = db.execute("SELECT id FROM attendance WHERE employee_id=? AND date=?", (eid, day)).fetchone()
+        if existing:
+            db.execute("""UPDATE attendance SET check_in=?, check_out=?, hours=?, status=?, notes=?, updated_at=?
+                          WHERE id=?""", (ci, co, hours, status, notes, utcnow(), existing["id"]))
+        else:
+            db.execute("""INSERT INTO attendance(employee_id,employee_name,date,check_in,check_out,hours,
+                          status,notes,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                       (eid, emp["name_en"] or emp["name_ar"], day, ci, co, hours, status, notes,
+                        current_user()["id"], utcnow(), utcnow()))
+        db.commit()
+        log_audit(current_user()["username"], "attendance_manual", f"{emp['name_en']} {day}")
+        return redirect(url_for("hr.attendance", date=day))
+    emps = db.execute("SELECT id,name_en FROM employees ORDER BY name_en").fetchall()
+    return render_template("hr/attendance_manual.html", emps=emps, statuses=ATTEND_STATUSES, today=utcnow()[:10])

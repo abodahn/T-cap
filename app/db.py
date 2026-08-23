@@ -195,6 +195,11 @@ CREATE TABLE IF NOT EXISTS leave_requests(
   leave_type_id INTEGER, start_date TEXT, end_date TEXT, days REAL, reason TEXT,
   status TEXT DEFAULT 'Pending', decided_by TEXT, decided_at TEXT,
   created_by INTEGER, created_at TEXT, updated_at TEXT);
+CREATE TABLE IF NOT EXISTS attendance(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, employee_id INTEGER, employee_name TEXT,
+  date TEXT, check_in TEXT, check_out TEXT, hours REAL, status TEXT DEFAULT 'Present',
+  notes TEXT, created_by INTEGER, created_at TEXT, updated_at TEXT,
+  UNIQUE(employee_id, date));
 
 CREATE TABLE IF NOT EXISTS assets(
   id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id TEXT UNIQUE, name TEXT,
