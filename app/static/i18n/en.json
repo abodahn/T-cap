@@ -263,5 +263,13 @@
   "confirm_bulk_close": "Close all selected tickets?",
   "select_all": "Select all",
   "tickets_updated": "tickets updated",
-  "confirm_close_own": "Close this ticket?"
+  "confirm_close_own": "Close this ticket?",
+  "all_types": "All types",
+  "all_agents": "All assignees",
+  "showing": "Showing",
+  "of": "of",
+  "clear_filters": "Clear filters",
+  "prev": "Prev",
+  "next": "Next",
+  "page": "Page"
 }

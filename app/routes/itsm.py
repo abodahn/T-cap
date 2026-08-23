@@ -78,32 +78,65 @@ def index():
     db = get_db()
     status = request.args.get("status") or ""
     priority = request.args.get("priority") or ""
+    ftype = request.args.get("type") or ""
+    fsite = request.args.get("site") or ""
+    fagent = request.args.get("agent") or ""     # assignee filter
     scope = request.args.get("scope") or ""
     q = (request.args.get("q") or "").strip()
     sort = request.args.get("sort") or ""
     sdir = "desc" if request.args.get("dir") == "desc" else "asc"
     u = current_user()
+    can_edit = user_can("itsm_edit")
     own_sql, own_p = _own_scope(u)
-    sql = "SELECT * FROM tickets WHERE 1=1" + own_sql
+
+    where = "1=1" + own_sql
     p = list(own_p)
     if status:
-        sql += " AND status=?"; p.append(status)
+        where += " AND status=?"; p.append(status)
     if priority:
-        sql += " AND priority=?"; p.append(priority)
+        where += " AND priority=?"; p.append(priority)
+    if ftype:
+        where += " AND type=?"; p.append(ftype)
+    if fsite:
+        where += " AND site=?"; p.append(fsite)
+    if fagent == "__unassigned__":
+        where += " AND (assigned_agent IS NULL OR assigned_agent='')"
+    elif fagent:
+        where += " AND assigned_agent=?"; p.append(fagent)
     if scope == "mine":
-        sql += " AND assigned_agent=?"; p.append(u["full_name"])
+        where += " AND assigned_agent=?"; p.append(u["full_name"])
     elif scope == "unassigned":
-        sql += " AND (assigned_agent IS NULL OR assigned_agent='')"
+        where += " AND (assigned_agent IS NULL OR assigned_agent='')"
     if q:
-        sql += " AND (subject LIKE ? OR ref LIKE ? OR requester LIKE ?)"; p += [f"%{q}%"] * 3
-    sql += " ORDER BY " + _order_by(sort, sdir)
-    rows = db.execute(sql, p).fetchall()
+        where += " AND (subject LIKE ? OR ref LIKE ? OR requester LIKE ?)"; p += [f"%{q}%"] * 3
+
+    total = db.execute("SELECT COUNT(*) FROM tickets WHERE " + where, p).fetchone()[0]
+
+    PAGE = 50
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except ValueError:
+        page = 1
+    order = _order_by(sort, sdir)
+    base = "SELECT * FROM tickets WHERE " + where + " ORDER BY " + order
+    # 'breached' post-filters in Python, so it can't be SQL-paginated — fetch all.
+    if scope == "breached":
+        rows = db.execute(base, p).fetchall()
+    else:
+        rows = db.execute(base + " LIMIT ? OFFSET ?", p + [PAGE, (page - 1) * PAGE]).fetchall()
+
     tickets = []
     for r in rows:
         sla = core.compute_sla(r)
         if scope == "breached" and not sla["breached"]:
             continue
         tickets.append({"r": r, "sla": sla})
+
+    if scope == "breached":
+        page, pages, total = 1, 1, len(tickets)
+    else:
+        pages = max(1, (total + PAGE - 1) // PAGE)
+
     counts = {"": db.execute("SELECT COUNT(*) FROM tickets WHERE 1=1" + own_sql, own_p).fetchone()[0]}
     for s in core.STATUSES:
         c = db.execute("SELECT COUNT(*) FROM tickets WHERE status=?" + own_sql, [s] + own_p).fetchone()[0]
@@ -114,10 +147,19 @@ def index():
         "unassigned": db.execute("SELECT COUNT(*) FROM tickets WHERE (assigned_agent IS NULL OR assigned_agent='') AND status NOT IN ('Resolved','Closed','Cancelled')" + own_sql, own_p).fetchone()[0],
     }
     agents = db.execute("SELECT full_name FROM users WHERE role IN ('it_agent','it_admin','monitoring_admin') ORDER BY full_name").fetchall()
+    # Distinct filter options (agents only — employees have a tiny own-list).
+    f_types = f_sites = f_agents = []
+    if can_edit:
+        f_types = [r[0] for r in db.execute("SELECT DISTINCT type FROM tickets WHERE type IS NOT NULL AND type<>'' ORDER BY type").fetchall()]
+        f_sites = [r[0] for r in db.execute("SELECT DISTINCT site FROM tickets WHERE site IS NOT NULL AND site<>'' ORDER BY site").fetchall()]
+        f_agents = [r[0] for r in db.execute("SELECT DISTINCT assigned_agent FROM tickets WHERE assigned_agent IS NOT NULL AND assigned_agent<>'' ORDER BY assigned_agent").fetchall()]
     return render_template("itsm/list.html", tickets=tickets, statuses=core.STATUSES,
                            priorities=core.PRIORITIES, f_status=status, f_priority=priority,
+                           f_type=ftype, f_site=fsite, f_agent=fagent,
+                           f_types=f_types, f_sites=f_sites, f_agents=f_agents,
                            scope=scope, q=q, counts=counts, scope_counts=scope_counts,
-                           sort=sort, sdir=sdir, agents=agents, can_edit=user_can("itsm_edit"))
+                           sort=sort, sdir=sdir, agents=agents, can_edit=can_edit,
+                           page=page, pages=pages, total=total, shown=len(tickets), page_size=PAGE)
 
 
 @bp.route("/bulk", methods=["POST"])
@@ -168,12 +210,23 @@ def export_xlsx():
     status = request.args.get("status") or ""
     priority = request.args.get("priority") or ""
     q = (request.args.get("q") or "").strip()
+    ftype = request.args.get("type") or ""
+    fsite = request.args.get("site") or ""
+    fagent = request.args.get("agent") or ""
     own_sql, own_p = _own_scope(current_user())
     sql = "SELECT * FROM tickets WHERE 1=1" + own_sql; p = list(own_p)
     if status:
         sql += " AND status=?"; p.append(status)
     if priority:
         sql += " AND priority=?"; p.append(priority)
+    if ftype:
+        sql += " AND type=?"; p.append(ftype)
+    if fsite:
+        sql += " AND site=?"; p.append(fsite)
+    if fagent == "__unassigned__":
+        sql += " AND (assigned_agent IS NULL OR assigned_agent='')"
+    elif fagent:
+        sql += " AND assigned_agent=?"; p.append(fagent)
     if q:
         sql += " AND (subject LIKE ? OR ref LIKE ?)"; p += [f"%{q}%", f"%{q}%"]
     sort = request.args.get("sort") or ""

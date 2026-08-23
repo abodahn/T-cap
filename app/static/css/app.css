@@ -170,6 +170,19 @@
 .tc-chk-col { width: 34px; text-align: center; }
 .tc-chk-col input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--brand-grey); cursor: pointer; }
 
+/* inline row quick-edit selects */
+.tc-inline form { margin: 0; }
+.tc-select--bare { padding: 4px 8px; font-size: 12.5px; background: transparent;
+  border-color: transparent; max-width: 160px; }
+.tc-select--bare:hover { border-color: var(--line-color); background: var(--surface-2); }
+
+/* list meta + pagination */
+.tc-listmeta { font-size: 13px; margin-bottom: 12px; }
+.tc-listmeta a { color: var(--text-muted); text-decoration: underline; }
+.tc-listmeta a:hover { color: var(--text); }
+.tc-pager { display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin-top: 16px; font-size: 13px; }
+
 /* cards + table rows: subtle interaction */
 .tc-card { transition: border-color var(--transition); }
 .tc-table tbody tr { transition: background var(--transition); }

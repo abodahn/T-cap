@@ -263,5 +263,13 @@
   "confirm_bulk_close": "إغلاق كل التذاكر المحددة؟",
   "select_all": "تحديد الكل",
   "tickets_updated": "تذكرة تم تحديثها",
-  "confirm_close_own": "إغلاق هذه التذكرة؟"
+  "confirm_close_own": "إغلاق هذه التذكرة؟",
+  "all_types": "كل الأنواع",
+  "all_agents": "كل المسؤولين",
+  "showing": "عرض",
+  "of": "من",
+  "clear_filters": "مسح عوامل التصفية",
+  "prev": "السابق",
+  "next": "التالي",
+  "page": "صفحة"
 }
