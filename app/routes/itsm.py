@@ -95,10 +95,52 @@ def index():
         "mine": db.execute("SELECT COUNT(*) FROM tickets WHERE assigned_agent=? AND status NOT IN ('Resolved','Closed','Cancelled')", (u["full_name"],)).fetchone()[0],
         "unassigned": db.execute("SELECT COUNT(*) FROM tickets WHERE (assigned_agent IS NULL OR assigned_agent='') AND status NOT IN ('Resolved','Closed','Cancelled')" + own_sql, own_p).fetchone()[0],
     }
+    agents = db.execute("SELECT full_name FROM users WHERE role IN ('it_agent','it_admin','monitoring_admin') ORDER BY full_name").fetchall()
     return render_template("itsm/list.html", tickets=tickets, statuses=core.STATUSES,
                            priorities=core.PRIORITIES, f_status=status, f_priority=priority,
                            scope=scope, q=q, counts=counts, scope_counts=scope_counts,
-                           sort=sort, sdir=sdir)
+                           sort=sort, sdir=sdir, agents=agents, can_edit=user_can("itsm_edit"))
+
+
+@bp.route("/bulk", methods=["POST"])
+@permission_required("itsm_edit")
+def bulk():
+    db = get_db()
+    refs = request.form.getlist("sel")
+    act = request.form.get("action") or ""
+    u = current_user()
+    now = utcnow()
+    done = 0
+    for ref in refs:
+        t = db.execute("SELECT * FROM tickets WHERE ref=?", (ref,)).fetchone()
+        if not t:
+            continue
+        if act == "assign":
+            who = request.form.get("assigned_agent") or ""
+            db.execute("UPDATE tickets SET assigned_agent=?, status=CASE WHEN status='New' THEN 'Assigned' ELSE status END, updated_at=? WHERE id=?",
+                       (who, now, t["id"]))
+            _stamp_first_response(db, t)
+            _event(db, t["id"], "assign", f"Assigned to {who or 'unassigned'}")
+            if who and who != u["full_name"]:
+                from app.notify import notify_assignment
+                notify_assignment(db, t, who)
+        elif act == "status":
+            new_status = request.form.get("status")
+            if new_status in core.STATUSES and new_status != t["status"]:
+                db.execute("UPDATE tickets SET status=?, updated_at=? WHERE id=?", (new_status, now, t["id"]))
+                _stamp_first_response(db, t)
+                _event(db, t["id"], "status", f"Status → {new_status}")
+        elif act == "close":
+            db.execute("UPDATE tickets SET status='Closed', closed_at=?, updated_at=? WHERE id=?", (now, now, t["id"]))
+            _event(db, t["id"], "status", "Ticket closed")
+        else:
+            continue
+        done += 1
+    if done:
+        db.commit()
+        log_audit(u["username"], f"itsm_bulk_{act}", f"{done} tickets")
+        flash(f"bulk_done:{done}")
+    return redirect(request.referrer or url_for("itsm.index"))
 
 
 @bp.route("/export.xlsx")

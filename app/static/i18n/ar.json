@@ -22,7 +22,6 @@
   "invalid_credentials": "اسم المستخدم أو كلمة المرور غير صحيحة.",
   "username": "اسم المستخدم",
   "password": "كلمة المرور",
-
   "role_super_admin": "مدير عام للنظام",
   "role_it_admin": "مدير تقنية المعلومات",
   "role_it_agent": "فني الدعم الفني",
@@ -34,7 +33,6 @@
   "role_executive": "تنفيذي",
   "role_auditor": "مدقق / قراءة فقط",
   "role_employee": "موظف",
-
   "dashboard": "لوحة المعلومات",
   "welcome": "مرحباً بعودتك",
   "operational_health": "الصحة التشغيلية",
@@ -54,7 +52,6 @@
   "group_health": "صحة المجموعة",
   "view_all": "عرض الكل",
   "convert_to_ticket": "تحويل إلى تذكرة",
-
   "tickets": "التذاكر",
   "new_ticket": "تذكرة جديدة",
   "ticket": "تذكرة",
@@ -82,7 +79,6 @@
   "cancel": "إلغاء",
   "back": "رجوع",
   "none": "لا يوجد",
-
   "assets": "الأصول",
   "new_asset": "أصل جديد",
   "asset": "أصل",
@@ -103,7 +99,6 @@
   "min_stock": "الحد الأدنى",
   "warehouse": "المستودع",
   "uom": "الوحدة",
-
   "monitoring": "المراقبة",
   "endpoint": "الجهاز",
   "hostname": "اسم الجهاز",
@@ -119,7 +114,6 @@
   "message": "الرسالة",
   "online": "متصل",
   "warning": "تحذير",
-
   "reports": "التقارير",
   "administration": "الإدارة",
   "users": "المستخدمون",
@@ -261,5 +255,12 @@
   "have_account": "لديك حساب بالفعل؟",
   "no_account": "جديد هنا؟",
   "username_invalid": "اسم المستخدم يمكن أن يحتوي على أحرف وأرقام ونقطة وشرطة سفلية فقط.",
-  "confirm_delete_user": "حذف المستخدم نهائيًا"
+  "confirm_delete_user": "حذف المستخدم نهائيًا",
+  "selected": "محدد",
+  "assign": "إسناد",
+  "set_status": "تغيير الحالة",
+  "close": "إغلاق",
+  "confirm_bulk_close": "إغلاق كل التذاكر المحددة؟",
+  "select_all": "تحديد الكل",
+  "tickets_updated": "تذكرة تم تحديثها"
 }

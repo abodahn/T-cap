@@ -22,7 +22,6 @@
   "invalid_credentials": "Invalid username or password.",
   "username": "Username",
   "password": "Password",
-
   "role_super_admin": "Super Admin",
   "role_it_admin": "IT Admin",
   "role_it_agent": "IT Agent",
@@ -34,7 +33,6 @@
   "role_executive": "Executive",
   "role_auditor": "Auditor / Read-only",
   "role_employee": "Employee",
-
   "dashboard": "Dashboard",
   "welcome": "Welcome back",
   "operational_health": "Operational Health",
@@ -54,7 +52,6 @@
   "group_health": "Group Health",
   "view_all": "View all",
   "convert_to_ticket": "Convert to ticket",
-
   "tickets": "Tickets",
   "new_ticket": "New Ticket",
   "ticket": "Ticket",
@@ -82,7 +79,6 @@
   "cancel": "Cancel",
   "back": "Back",
   "none": "None",
-
   "assets": "Assets",
   "new_asset": "New Asset",
   "asset": "Asset",
@@ -103,7 +99,6 @@
   "min_stock": "Min Stock",
   "warehouse": "Warehouse",
   "uom": "Unit",
-
   "monitoring": "Monitoring",
   "endpoint": "Endpoint",
   "hostname": "Hostname",
@@ -119,7 +114,6 @@
   "message": "Message",
   "online": "Online",
   "warning": "Warning",
-
   "reports": "Reports",
   "administration": "Administration",
   "users": "Users",
@@ -261,5 +255,12 @@
   "have_account": "Already have an account?",
   "no_account": "New here?",
   "username_invalid": "Username can only contain letters, numbers, dot and underscore.",
-  "confirm_delete_user": "Permanently delete user"
+  "confirm_delete_user": "Permanently delete user",
+  "selected": "selected",
+  "assign": "Assign",
+  "set_status": "Set status",
+  "close": "Close",
+  "confirm_bulk_close": "Close all selected tickets?",
+  "select_all": "Select all",
+  "tickets_updated": "tickets updated"
 }

@@ -35,6 +35,25 @@
   </form>
 </div>
 
+{% if can_edit %}
+<form id="bulkForm" method="post" action="{{ url_for('itsm.bulk') }}">
+<input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+<div class="tc-bulkbar" id="bulkBar" hidden>
+  <span class="tc-bulkbar__n"><b id="bulkCount">0</b> {{ t('selected') }}</span>
+  <span class="tc-bulkbar__sp"></span>
+  <select class="tc-select" name="assigned_agent">
+    <option value="">{{ t('unassigned') }}</option>
+    {% for a in agents %}<option value="{{ a['full_name'] }}">{{ a['full_name'] }}</option>{% endfor %}
+  </select>
+  <button class="tc-btn tc-btn--ghost" name="action" value="assign">{{ t('assign') }}</button>
+  <select class="tc-select" name="status">
+    {% for s in statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+  </select>
+  <button class="tc-btn tc-btn--ghost" name="action" value="status">{{ t('set_status') }}</button>
+  <button class="tc-btn tc-btn--ghost" name="action" value="close"
+          onclick="return confirm('{{ t('confirm_bulk_close') }}')">{{ t('close') }}</button>
+</div>
+{% endif %}
 <div class="tc-table-wrap">
   <table class="tc-table">
     {% macro sortth(key, label) %}
@@ -45,12 +64,14 @@
       </a></th>
     {% endmacro %}
     <thead><tr>
+      {% if can_edit %}<th class="tc-chk-col"><input type="checkbox" id="bulkAll" title="{{ t('select_all') }}"></th>{% endif %}
       {{ sortth('ref', t('ticket')) }}{{ sortth('subject', t('subject')) }}{{ sortth('priority', t('priority')) }}
       {{ sortth('status', t('status')) }}{{ sortth('sla', 'SLA') }}{{ sortth('agent', t('assigned_agent')) }}
     </tr></thead>
     <tbody>
       {% for item in tickets %}{% set r = item.r %}{% set s = item.sla %}
       <tr onclick="location='{{ url_for('itsm.view', ref=r['ref']) }}'" class="{{ 'tc-row-danger' if s.breached }}">
+        {% if can_edit %}<td class="tc-chk-col" onclick="event.stopPropagation()"><input type="checkbox" class="bulkChk" name="sel" value="{{ r['ref'] }}" form="bulkForm"></td>{% endif %}
         <td><a class="tc-idlink" href="{{ url_for('itsm.view', ref=r['ref']) }}" onclick="event.stopPropagation()">{{ r['ref'] }}</a></td>
         <td>{{ r['subject'] }}{% if r['type'] %}<div class="tc-faint" style="font-size:12px;margin-top:2px">{{ r['type'] }} · {{ r['category'] }}</div>{% endif %}</td>
         <td>{{ prio_chip(r['priority']) }}</td>
@@ -58,8 +79,21 @@
         <td>{{ chip(s.status, sla_kind.get(s.status,'')) }}{% if r['status'] not in ['Resolved','Closed','Cancelled'] and s.remaining %}<div class="tc-mono {{ 'tc-due-over' if s.breached else 'tc-faint' }}" style="font-size:12px;margin-top:2px">{{ s.remaining }} {{ '' if s.breached else t('left') }}</div>{% endif %}</td>
         <td class="tc-faint">{{ r['assigned_agent'] or ('—' if r['status'] not in ['Resolved','Closed'] else '') }}</td>
       </tr>
-      {% else %}<tr><td colspan="6"><div class="tc-empty"><img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt=""><p>{{ t('no_records') }}</p></div></td></tr>{% endfor %}
+      {% else %}<tr><td colspan="{{ 7 if can_edit else 6 }}"><div class="tc-empty"><img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt=""><p>{{ t('no_records') }}</p></div></td></tr>{% endfor %}
     </tbody>
   </table>
 </div>
+{% if can_edit %}</form>
+<script>
+(function(){
+  var bar=document.getElementById('bulkBar'), cnt=document.getElementById('bulkCount'),
+      all=document.getElementById('bulkAll');
+  function chks(){ return Array.prototype.slice.call(document.querySelectorAll('.bulkChk')); }
+  function sync(){ var n=chks().filter(function(c){return c.checked;}).length;
+    cnt.textContent=n; bar.hidden=(n===0);
+    if(all){ all.checked=(n>0 && n===chks().length); all.indeterminate=(n>0 && n<chks().length); } }
+  if(all){ all.addEventListener('change',function(){ chks().forEach(function(c){c.checked=all.checked;}); sync(); }); }
+  document.addEventListener('change',function(e){ if(e.target.classList.contains('bulkChk')) sync(); });
+})();
+</script>{% endif %}
 {% endblock %}
