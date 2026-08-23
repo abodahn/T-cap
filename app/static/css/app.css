@@ -290,8 +290,10 @@
 
 /* Filter row */
 .tc-toolbar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
-.tc-toolbar .tc-input, .tc-toolbar .tc-select { padding: 8px 12px; font-size: 13px; }
-.tc-toolbar .grow { flex: 1; min-width: 180px; max-width: 320px; }
+/* Toolbar controls size to content and sit inline (override the global 100%). */
+.tc-toolbar .tc-input, .tc-toolbar .tc-select { padding: 8px 12px; font-size: 13px; width: auto; }
+.tc-toolbar .tc-select { max-width: 200px; }
+.tc-toolbar .grow { flex: 1 1 220px; min-width: 180px; max-width: 340px; }
 
 /* Issue layout: content + properties rail */
 .tc-issue { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: var(--space-6); align-items: start; }

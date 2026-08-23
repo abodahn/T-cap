@@ -83,7 +83,7 @@
       {% set nd = 'desc' if (sort==key and sdir=='asc') else 'asc' %}
       <th><a class="tc-th-sort {{ 'on' if sort==key }}"
              href="{{ url_for('itsm.index', scope=scope, status=f_status, priority=f_priority, type=f_type, site=f_site, agent=f_agent, q=q, sort=key, dir=nd) }}">
-        {{ label }}<span class="tc-th-arrow">{{ '▲' if (sort==key and sdir=='asc') else ('▼' if sort==key else '⇅') }}</span>
+        {{ label }}<span class="tc-th-arrow">{{ '↑' if (sort==key and sdir=='asc') else ('↓' if sort==key else '↕') }}</span>
       </a></th>
     {% endmacro %}
     <thead><tr>

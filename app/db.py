@@ -259,9 +259,18 @@ def _migrate(conn):
 
 
 def _backfill_perms(conn):
-    """Ensure permissions added after the initial role_perms seed reach existing
-    installs. Idempotent; runs after _seed so it never suppresses a fresh seed."""
+    """Ensure permissions/roles added after the initial role_perms seed reach
+    existing installs. Idempotent; runs after _seed so it never suppresses a
+    fresh seed."""
     try:
+        from app.security import ROLES as _ROLES, PERMISSIONS as _PERMS
+        # Roles added after the first seed (e.g. hr_manager) are entirely absent
+        # from role_perms on old installs — seed their full static perm set.
+        present = {r["role"] for r in conn.execute("SELECT DISTINCT role FROM role_perms").fetchall()}
+        for r, ps in _ROLES.items():
+            if r not in present and "*" not in ps:
+                for p in (_PERMS if "*" in ps else ps):
+                    conn.execute("INSERT OR IGNORE INTO role_perms(role,perm) VALUES(?,?)", (r, p))
         for perm, roles in _PERM_BACKFILL.items():
             for r in roles:
                 conn.execute("INSERT OR IGNORE INTO role_perms(role,perm) VALUES(?,?)", (r, perm))

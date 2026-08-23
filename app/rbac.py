@@ -31,6 +31,11 @@ def load():
 
 
 def role_can(role, perm):
+    # A role defined as "*" in the static catalogue (super_admin) is omnipotent,
+    # regardless of the (possibly stale) role_perms table. This keeps newly-added
+    # permissions working for super admins on already-seeded installs.
+    if "*" in ROLES.get(role, set()):
+        return True
     m = load()
     perms = m.get(role)
     if perms is None:
