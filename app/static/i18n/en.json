@@ -392,5 +392,18 @@
   "hr_improvements": "Areas to improve",
   "hr_goals": "Goals",
   "hr_no_appraisals": "No appraisals yet.",
-  "hr_appraisal_name_required": "Please choose an employee."
+  "hr_appraisal_name_required": "Please choose an employee.",
+  "hr_overview": "Overview",
+  "hr_overview_sub": "Your people, requests, payroll and policies — in one place.",
+  "hr_headcount": "Employees",
+  "hr_open_requests": "Open requests",
+  "hr_pending": "pending",
+  "hr_my_open": "My open requests",
+  "hr_to_ack": "to acknowledge",
+  "hr_card_requests": "Raise and track leave, absence and HR service requests.",
+  "hr_card_announce": "Company announcements and HR news.",
+  "hr_card_policies": "Read and acknowledge company policies.",
+  "hr_card_directory": "Search the full employee directory.",
+  "hr_card_appraisals": "Performance reviews and ratings.",
+  "hr_card_payroll": "Monthly payroll runs and payslips."
 }

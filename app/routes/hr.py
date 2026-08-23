@@ -146,6 +146,38 @@ def import_workbook(db, ws):
 
 
 @bp.route("/")
+@login_required
+def overview():
+    """HR module home — role-aware KPI tiles, module cards, recent activity."""
+    db = get_db()
+    if not (user_can("hr_request") or user_can("hr_view_all")):
+        abort(403)
+    u = current_user()
+    staff = user_can("hr_view_all")
+    OPEN = "('Submitted','In Review','More Info','Approved')"
+    k = {}
+    if staff:
+        k["headcount"] = db.execute("SELECT COUNT(*) FROM employees").fetchone()[0]
+        k["open_cases"] = db.execute(f"SELECT COUNT(*) FROM hr_cases WHERE status IN {OPEN}").fetchone()[0]
+        k["pending"] = db.execute("SELECT COUNT(*) FROM hr_cases WHERE status IN ('Submitted','In Review','More Info')").fetchone()[0]
+        k["appraisals"] = db.execute("SELECT COUNT(*) FROM hr_appraisals").fetchone()[0]
+    k["my_open"] = db.execute(f"SELECT COUNT(*) FROM hr_cases WHERE (created_by=? OR requester=?) AND status IN {OPEN}",
+                              (u["id"], u["full_name"])).fetchone()[0]
+    k["policies"] = db.execute("SELECT COUNT(*) FROM hr_policies WHERE active=1").fetchone()[0]
+    acked = {r[0] for r in db.execute("SELECT policy_id FROM hr_policy_acks WHERE user_id=?", (u["id"],)).fetchall()}
+    k["policies_todo"] = max(0, k["policies"] - len(acked))
+    announcements = db.execute("SELECT * FROM hr_announcements ORDER BY pinned DESC, created_at DESC LIMIT 3").fetchall()
+    if staff:
+        recent = db.execute(f"SELECT * FROM hr_cases ORDER BY created_at DESC LIMIT 6").fetchall()
+    else:
+        recent = db.execute("SELECT * FROM hr_cases WHERE created_by=? OR requester=? ORDER BY created_at DESC LIMIT 6",
+                            (u["id"], u["full_name"])).fetchall()
+    return render_template("hr/overview.html", k=k, staff=staff, announcements=announcements,
+                           recent=recent, module_label=_module_label,
+                           can_manage=user_can("hr_manage"))
+
+
+@bp.route("/directory")
 @permission_required("hr_view_all")
 def index():
     db = get_db()

@@ -188,6 +188,20 @@
 .tc-total-row td { border-top: var(--line-strong); background: var(--surface-2);
   font-weight: 700; }
 
+/* HR module cards */
+.tc-modgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
+.tc-modcard { display: flex; align-items: center; gap: 14px; padding: 16px 18px;
+  background: var(--surface); border: var(--line); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card); transition: transform var(--transition), border-color var(--transition); }
+.tc-modcard:hover { transform: translateY(-2px); border-color: var(--brand-silver); }
+.tc-modcard__ic { font-size: 26px; width: 46px; height: 46px; flex: 0 0 auto; display: grid;
+  place-items: center; background: var(--surface-2); border-radius: var(--radius-md); }
+.tc-modcard__b { min-width: 0; flex: 1; }
+.tc-modcard__t { font-weight: 700; font-size: 15px; }
+.tc-modcard__d { color: var(--text-faint); font-size: 12.5px; margin-top: 2px; line-height: 1.4; }
+.tc-modcard__n { font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums;
+  color: var(--text-muted); }
+
 /* HR sub-navigation strip */
 .tc-subnav { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px;
   border-bottom: var(--line); padding-bottom: 0; }

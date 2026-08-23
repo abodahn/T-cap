@@ -1,4 +1,5 @@
 <div class="tc-subnav">
+  <a class="{{ 'on' if active=='overview' }}" href="{{ url_for('hr.overview') }}">{{ t('hr_overview') }}</a>
   <a class="{{ 'on' if active=='cases' }}" href="{{ url_for('hr.cases') }}">{{ t('hr_requests') }}</a>
   <a class="{{ 'on' if active=='announcements' }}" href="{{ url_for('hr.announcements') }}">{{ t('hr_announcements') }}</a>
   <a class="{{ 'on' if active=='policies' }}" href="{{ url_for('hr.policies') }}">{{ t('hr_policies') }}</a>

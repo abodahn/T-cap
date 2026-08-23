@@ -392,5 +392,18 @@
   "hr_improvements": "مجالات التحسين",
   "hr_goals": "الأهداف",
   "hr_no_appraisals": "لا توجد تقييمات بعد.",
-  "hr_appraisal_name_required": "من فضلك اختر موظفًا."
+  "hr_appraisal_name_required": "من فضلك اختر موظفًا.",
+  "hr_overview": "نظرة عامة",
+  "hr_overview_sub": "موظفوك وطلباتك والرواتب والسياسات في مكان واحد.",
+  "hr_headcount": "الموظفون",
+  "hr_open_requests": "الطلبات المفتوحة",
+  "hr_pending": "قيد الانتظار",
+  "hr_my_open": "طلباتي المفتوحة",
+  "hr_to_ack": "بحاجة إقرار",
+  "hr_card_requests": "تقديم ومتابعة طلبات الإجازات والغياب وخدمات الموارد البشرية.",
+  "hr_card_announce": "إعلانات الشركة وأخبار الموارد البشرية.",
+  "hr_card_policies": "قراءة سياسات الشركة والإقرار بها.",
+  "hr_card_directory": "البحث في دليل الموظفين الكامل.",
+  "hr_card_appraisals": "تقييمات الأداء والتقديرات.",
+  "hr_card_payroll": "كشوف الرواتب الشهرية وقسائم الراتب."
 }
