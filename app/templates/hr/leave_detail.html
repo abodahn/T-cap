@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip, avatar %}
+{% block title %}{{ t('hr_leave') }} · {{ r['employee_name'] }}{% endblock %}
+{% set lv_kind = {'Pending':'warning','Approved':'success','Rejected':'danger','Cancelled':''} %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l tc-cellflex" style="gap:16px">
+    {{ avatar(r['employee_name'], 48) }}
+    <div>
+      <span class="tc-kicker"><b>04</b> · {{ t('hr_leave') }}</span>
+      <h1 class="tc-issue__title" style="margin:2px 0">{{ r['employee_name'] }}</h1>
+      <div class="tc-faint">{{ r['type_name'] or '—' }} · {{ r['days']|int }} {{ t('hr_days_short') }}</div>
+    </div>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.leave') }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-metabar">{{ chip(r['status'], lv_kind.get(r['status'],'')) }}<span class="tc-pill">{{ r['start_date'] }} → {{ r['end_date'] }}</span></div>
+
+<div class="tc-issue">
+  <div>
+    <div class="tc-section">{{ t('hr_reason') }}</div>
+    <div class="tc-desc">{{ r['reason'] or '—' }}</div>
+    {% if r['decided_by'] %}<div class="tc-section">{{ t('hr_decision') }}</div>
+    <div class="tc-desc tc-faint">{{ r['status'] }} · {{ r['decided_by'] }} · {{ (r['decided_at'] or '')[:16] }}</div>{% endif %}
+  </div>
+  <div>
+    <dl class="tc-props">
+      <div class="tc-prop"><dt>{{ t('hr_leave_type') }}</dt><dd class="tc-prop__v">{{ r['type_name'] or '—' }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('hr_days') }}</dt><dd class="tc-prop__v">{{ r['days']|int }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('created') }}</dt><dd class="tc-prop__v tc-mono tc-faint">{{ r['created_at'][:16] }}</dd></div>
+    </dl>
+    {% if r['status'] == 'Pending' or (r['status']=='Approved' and is_owner) %}
+    <div class="tc-rail-actions">
+      {% if can_decide and r['status']=='Pending' %}
+      <form method="post" action="{{ url_for('hr.leave_action', lid=r['id']) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-btn tc-btn--primary tc-btn--block" name="action" value="approve">✓ {{ t('hr_approve') }}</button></form>
+      <form method="post" action="{{ url_for('hr.leave_action', lid=r['id']) }}" style="margin-top:8px"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-btn tc-btn--block" name="action" value="reject">✕ {{ t('hr_reject') }}</button></form>
+      {% endif %}
+      {% if (is_owner or can_decide) and r['status'] in ['Pending','Approved'] %}
+      <form method="post" action="{{ url_for('hr.leave_action', lid=r['id']) }}" style="margin-top:8px"
+            onsubmit="return confirm('{{ t('hr_confirm_cancel') }}')"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-btn tc-btn--block" name="action" value="cancel">{{ t('hr_cancel_request') }}</button></form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

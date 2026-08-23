@@ -187,6 +187,15 @@ CREATE TABLE IF NOT EXISTS hr_appraisals(
   period TEXT, reviewer TEXT, rating INTEGER, strengths TEXT, improvements TEXT,
   goals TEXT, status TEXT DEFAULT 'Draft', created_at TEXT, updated_at TEXT);
 
+CREATE TABLE IF NOT EXISTS leave_types(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, code TEXT, days_per_year REAL DEFAULT 0,
+  paid INTEGER DEFAULT 1, active INTEGER DEFAULT 1);
+CREATE TABLE IF NOT EXISTS leave_requests(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, employee_id INTEGER, employee_name TEXT,
+  leave_type_id INTEGER, start_date TEXT, end_date TEXT, days REAL, reason TEXT,
+  status TEXT DEFAULT 'Pending', decided_by TEXT, decided_at TEXT,
+  created_by INTEGER, created_at TEXT, updated_at TEXT);
+
 CREATE TABLE IF NOT EXISTS assets(
   id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id TEXT UNIQUE, name TEXT,
   category TEXT, brand TEXT, model TEXT, serial TEXT, company TEXT, site TEXT,
@@ -377,6 +386,15 @@ def _seed(conn):
         for r, ps in _R.items():
             for p in (_P if "*" in ps else ps):
                 conn.execute("INSERT OR IGNORE INTO role_perms(role,perm) VALUES(?,?)", (r, p))
+
+    # --- Default leave types (editable after) ---
+    if conn.execute("SELECT COUNT(*) AS c FROM leave_types").fetchone()["c"] == 0:
+        for name, code, days, paid in [
+            ("Annual", "annual", 21, 1), ("Sick", "sick", 7, 1),
+            ("Casual", "casual", 7, 1), ("Unpaid", "unpaid", 0, 0),
+        ]:
+            conn.execute("INSERT INTO leave_types(name,code,days_per_year,paid,active) VALUES(?,?,?,?,1)",
+                         (name, code, days, paid))
 
     # --- ITSM tickets (sample data — only when TCAP_SEED_DEMO is on) ---
     if Config.SEED_DEMO and conn.execute("SELECT COUNT(*) AS c FROM tickets").fetchone()["c"] == 0:

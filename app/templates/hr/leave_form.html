@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_request_leave') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span><h1 class="tc-h1">{{ t('hr_request_leave') }}</h1></div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.leave') }}">← {{ t('back') }}</a></div>
+</div>
+
+{% if balances %}
+<div class="tc-listmeta tc-faint">{{ t('hr_leave_balance') }}: {% for b in balances %}<b>{{ b.type['name'] }} {{ b.remaining|int }}</b>{% if not loop.last %} · {% endif %}{% endfor %}</div>
+{% endif %}
+
+<div class="tc-card" style="max-width:620px"><div class="tc-card__body">
+  {% if not emp %}<p class="tc-alert" style="margin-top:0">{{ t('hr_no_link') }}</p>{% endif %}
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="tc-field"><label class="tc-label">{{ t('hr_leave_type') }}</label>
+      <select class="tc-select" name="leave_type_id" style="width:100%">
+        {% for lt in types %}<option value="{{ lt['id'] }}">{{ lt['name'] }}{% if lt['days_per_year'] %} ({{ lt['days_per_year']|int }}{{ t('hr_days_short') }}){% endif %}</option>{% endfor %}
+      </select></div>
+    <div class="tc-grid-2">
+      <div class="tc-field"><label class="tc-label">{{ t('hr_from') }}</label><input class="tc-input" type="date" name="start_date" required style="width:100%"></div>
+      <div class="tc-field"><label class="tc-label">{{ t('hr_to') }}</label><input class="tc-input" type="date" name="end_date" required style="width:100%"></div>
+    </div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_reason') }} <span class="tc-faint">({{ t('optional') }})</span></label>
+      <textarea class="tc-textarea" name="reason" rows="3" style="width:100%"></textarea></div>
+    <button class="tc-btn tc-btn--primary">{{ t('hr_submit_request') }}</button>
+  </form>
+</div></div>
+{% endblock %}

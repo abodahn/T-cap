@@ -49,6 +49,8 @@
   background: color-mix(in srgb, var(--status-danger) 10%, transparent); }
 .tc-alert--ok { color: var(--status-success); border-color: color-mix(in srgb, var(--status-success) 40%, transparent);
   background: color-mix(in srgb, var(--status-success) 10%, transparent); }
+.tc-alert--warn { color: var(--status-warning); border-color: color-mix(in srgb, var(--status-warning) 40%, transparent);
+  background: color-mix(in srgb, var(--status-warning) 10%, transparent); }
 
 /* permission matrix */
 .tc-matrix { width: 100%; border-collapse: collapse; font-size: 13px; }

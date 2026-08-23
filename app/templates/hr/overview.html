@@ -38,6 +38,8 @@
     {% if badge is not none %}<span class="tc-modcard__n">{{ badge }}</span>{% endif %}
   </a>
   {% endmacro %}
+  {{ modcard('🙋', t('hr_my_hr'), t('hr_card_myhr'), 'hr.me') }}
+  {{ modcard('🌴', t('hr_leave'), t('hr_card_leave'), 'hr.leave') }}
   {{ modcard('🗂️', t('hr_requests'), t('hr_card_requests'), 'hr.cases', badge=(k.open_cases if staff else k.my_open)) }}
   {{ modcard('📢', t('hr_announcements'), t('hr_card_announce'), 'hr.announcements') }}
   {{ modcard('📋', t('hr_policies'), t('hr_card_policies'), 'hr.policies', badge=k.policies) }}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip, avatar %}
+{% block title %}{{ t('hr_my_hr') }}{% endblock %}
+{% set active = 'me' %}
+{% set lv_kind = {'Pending':'warning','Approved':'success','Rejected':'danger','Cancelled':''} %}
+{% set cs_kind = {'Submitted':'info','In Review':'warning','More Info':'warning','Approved':'success','Completed':'success','Rejected':'danger','Cancelled':''} %}
+{% macro money(v) %}{{ "{:,.0f}".format(v or 0) }}{% endmacro %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l tc-cellflex" style="gap:16px">
+    {{ avatar(user['full_name'], 52) }}
+    <div>
+      <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span>
+      <h1 class="tc-issue__title" style="margin:2px 0">{{ t('hr_my_hr') }}</h1>
+      <div class="tc-faint">{{ emp['job_title'] if emp and emp['job_title'] else user['full_name'] }}</div>
+    </div>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--primary" href="{{ url_for('hr.leave_new') }}">＋ {{ t('hr_request_leave') }}</a></div>
+</div>
+{% include 'hr/_subnav.html' %}
+
+{% if pol_todo %}
+<div class="tc-alert tc-alert--warn" style="margin-bottom:16px">📋 {{ pol_todo }} {{ t('hr_policies_await') }} · <a href="{{ url_for('hr.policies') }}">{{ t('hr_review_now') }}</a></div>
+{% endif %}
+
+{% if not emp %}
+<div class="tc-card" style="margin-bottom:20px"><div class="tc-card__body tc-faint" style="text-align:center;padding:20px">
+  {{ t('hr_no_link') }}
+</div></div>
+{% endif %}
+
+{% if balances %}
+<div class="tc-section">{{ t('hr_leave_balance') }}</div>
+<div class="tc-kpi-grid" style="margin-bottom:var(--space-6)">
+  {% for b in balances %}
+  <div class="tc-kpi">
+    <div class="tc-kpi__label">{{ b.type['name'] }}</div>
+    <div class="tc-kpi__value">{{ b.remaining|round(1)|int if b.remaining == b.remaining|round(0) else b.remaining }}</div>
+    <div class="tc-kpi__foot tc-muted">{{ t('hr_of') }} {{ b.entitlement|int }} · {{ b.used|int }} {{ t('hr_used') }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="tc-grid-2">
+  <div class="tc-card">
+    <div class="tc-card__head"><h3 style="margin:0">🌴 {{ t('hr_my_leave') }}</h3><a class="tc-btn tc-btn--ghost tc-btn--sm" href="{{ url_for('hr.leave') }}">{{ t('view_all') }}</a></div>
+    <div class="tc-table-wrap" style="border:0;border-radius:0"><table class="tc-table"><tbody>
+      {% for l in leave_rows %}
+      <tr onclick="location='{{ url_for('hr.leave_view', lid=l['id']) }}'">
+        <td>{{ l['type_name'] or '—' }}<div class="tc-faint" style="font-size:12px">{{ l['start_date'] }} → {{ l['end_date'] }} · {{ l['days']|int }}d</div></td>
+        <td style="text-align:end">{{ chip(l['status'], lv_kind.get(l['status'],'')) }}</td>
+      </tr>
+      {% else %}<tr><td><div class="tc-empty" style="padding:20px"><p>{{ t('hr_no_leave') }}</p></div></td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+
+  <div class="tc-card">
+    <div class="tc-card__head"><h3 style="margin:0">💷 {{ t('hr_my_payslips') }}</h3></div>
+    <div class="tc-table-wrap" style="border:0;border-radius:0"><table class="tc-table"><tbody>
+      {% for ps in payslips %}
+      <tr><td>{{ ps['period'] }}</td><td class="tc-faint tc-mono" style="text-align:end">{{ t('hr_net') }} {{ money(ps['net']) }}</td></tr>
+      {% else %}<tr><td><div class="tc-empty" style="padding:20px"><p>{{ t('hr_no_payslips') }}</p></div></td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</div>
+
+<div class="tc-card" style="margin-top:16px">
+  <div class="tc-card__head"><h3 style="margin:0">🗂️ {{ t('hr_my_requests') }}</h3><a class="tc-btn tc-btn--ghost tc-btn--sm" href="{{ url_for('hr.cases') }}">{{ t('view_all') }}</a></div>
+  <div class="tc-table-wrap" style="border:0;border-radius:0"><table class="tc-table"><tbody>
+    {% for c in my_cases %}
+    <tr onclick="location='{{ url_for('hr.case_view', ref=c['ref']) }}'">
+      <td class="tc-mono" style="width:1%">{{ c['ref'] }}</td>
+      <td>{{ c['subject'] }}<div class="tc-faint" style="font-size:12px">{{ t('hrmod_'+c['module']) }}</div></td>
+      <td style="text-align:end">{{ chip(c['status'], cs_kind.get(c['status'],'')) }}</td>
+    </tr>
+    {% else %}<tr><td><div class="tc-empty" style="padding:20px"><p>{{ t('hr_no_cases') }}</p></div></td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}

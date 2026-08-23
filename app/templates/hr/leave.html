@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip, avatar %}
+{% block title %}{{ t('hr_leave') }}{% endblock %}
+{% set active = 'leave' %}
+{% set lv_kind = {'Pending':'warning','Approved':'success','Rejected':'danger','Cancelled':''} %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span><h1 class="tc-h1">🌴 {{ t('hr_leave') }}</h1></div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--primary" href="{{ url_for('hr.leave_new') }}">＋ {{ t('hr_request_leave') }}</a></div>
+</div>
+{% include 'hr/_subnav.html' %}
+
+{% if not staff and balances %}
+<div class="tc-kpi-grid" style="margin-bottom:var(--space-6)">
+  {% for b in balances %}
+  <div class="tc-kpi"><div class="tc-kpi__label">{{ b.type['name'] }}</div>
+    <div class="tc-kpi__value">{{ b.remaining|int }}</div>
+    <div class="tc-kpi__foot tc-muted">{{ t('hr_of') }} {{ b.entitlement|int }} · {{ b.used|int }} {{ t('hr_used') }}</div></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if staff %}
+<div class="tc-toolbar">
+  <div class="tc-seg">
+    <a class="{{ 'on' if not f_status }}" href="{{ url_for('hr.leave') }}">{{ t('all_statuses') }}</a>
+    <a class="{{ 'on' if f_status=='Pending' }}" href="{{ url_for('hr.leave', status='Pending') }}">{{ t('hr_pending') }}{% if pending %} <span class="n">{{ pending }}</span>{% endif %}</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="tc-table-wrap">
+  <table class="tc-table">
+    <thead><tr>
+      {% if staff %}<th>{{ t('hr_employee') }}</th>{% endif %}
+      <th>{{ t('hr_leave_type') }}</th><th>{{ t('hr_dates') }}</th><th>{{ t('hr_days') }}</th><th>{{ t('status') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for l in rows %}
+      <tr onclick="location='{{ url_for('hr.leave_view', lid=l['id']) }}'">
+        {% if staff %}<td><span class="tc-cellflex">{{ avatar(l['employee_name'], 26) }}<span>{{ l['employee_name'] }}</span></span></td>{% endif %}
+        <td>{{ l['type_name'] or '—' }}</td>
+        <td class="tc-faint">{{ l['start_date'] }} → {{ l['end_date'] }}</td>
+        <td class="tc-mono">{{ l['days']|int }}</td>
+        <td>{{ chip(l['status'], lv_kind.get(l['status'],'')) }}</td>
+      </tr>
+      {% else %}<tr><td colspan="{{ 5 if staff else 4 }}"><div class="tc-empty"><img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt=""><p>{{ t('hr_no_leave') }}</p><a class="tc-btn tc-btn--primary tc-mt" href="{{ url_for('hr.leave_new') }}">＋ {{ t('hr_request_leave') }}</a></div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

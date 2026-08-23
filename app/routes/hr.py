@@ -694,3 +694,176 @@ def appraisal_status(aid):
         db.execute("UPDATE hr_appraisals SET status=?, updated_at=? WHERE id=?", (st, utcnow(), aid))
         db.commit()
     return redirect(url_for("hr.appraisal_detail", aid=aid))
+
+
+# ===========================================================================
+#  Self-service ("My HR") + Leave management
+# ===========================================================================
+
+def _my_employee(u):
+    """Best-effort link from a user account to an employee record:
+    explicit user_id, else matching email, else matching name."""
+    if not u:
+        return None
+    db = get_db()
+    row = db.execute("SELECT * FROM employees WHERE user_id=?", (u["id"],)).fetchone()
+    if row:
+        return row
+    if u["email"]:
+        row = db.execute("SELECT * FROM employees WHERE LOWER(email)=LOWER(?)", (u["email"],)).fetchone()
+        if row:
+            return row
+    return db.execute("SELECT * FROM employees WHERE name_en=? OR name_ar=?",
+                      (u["full_name"], u["full_name"])).fetchone()
+
+
+def _leave_balance(employee_id):
+    """Per-type entitlement / used / remaining for the current year."""
+    db = get_db()
+    year = utcnow()[:4]
+    out = []
+    for t in db.execute("SELECT * FROM leave_types WHERE active=1 ORDER BY id").fetchall():
+        used = db.execute("""SELECT COALESCE(SUM(days),0) AS d FROM leave_requests
+                             WHERE employee_id=? AND leave_type_id=? AND status='Approved'
+                             AND substr(start_date,1,4)=?""",
+                          (employee_id, t["id"], year)).fetchone()["d"] or 0
+        ent = t["days_per_year"] or 0
+        out.append({"type": t, "entitlement": ent, "used": used, "remaining": ent - used})
+    return out
+
+
+@bp.route("/me")
+@login_required
+def me():
+    db = get_db()
+    u = current_user()
+    emp = _my_employee(u)
+    payslips = leave_rows = balances = []
+    if emp:
+        payslips = db.execute("""SELECT * FROM payroll_runs WHERE name=? OR (employee_no IS NOT NULL AND employee_no=?)
+                                 ORDER BY period DESC LIMIT 6""",
+                              (emp["name_en"] or emp["name_ar"], emp["employee_no"])).fetchall()
+        balances = _leave_balance(emp["id"])
+        leave_rows = db.execute("SELECT lr.*, lt.name AS type_name FROM leave_requests lr "
+                                "LEFT JOIN leave_types lt ON lt.id=lr.leave_type_id "
+                                "WHERE lr.employee_id=? ORDER BY lr.created_at DESC LIMIT 5", (emp["id"],)).fetchall()
+    my_cases = db.execute(f"SELECT * FROM hr_cases WHERE created_by=? OR requester=? ORDER BY created_at DESC LIMIT 5",
+                          (u["id"], u["full_name"])).fetchall()
+    pol_todo = db.execute("""SELECT COUNT(*) AS c FROM hr_policies p WHERE p.active=1
+                             AND NOT EXISTS(SELECT 1 FROM hr_policy_acks a WHERE a.policy_id=p.id AND a.user_id=?)""",
+                          (u["id"],)).fetchone()["c"]
+    return render_template("hr/my_hr.html", emp=emp, payslips=payslips, balances=balances,
+                           leave_rows=leave_rows, my_cases=my_cases, pol_todo=pol_todo,
+                           can_manage=user_can("hr_manage"), module_label=_module_label)
+
+
+LEAVE_STATUSES = ["Pending", "Approved", "Rejected", "Cancelled"]
+
+
+def _days_between(start, end):
+    from datetime import date
+    s = date.fromisoformat(start); e = date.fromisoformat(end)
+    return (e - s).days + 1
+
+
+@bp.route("/leave")
+@login_required
+def leave():
+    db = get_db()
+    u = current_user()
+    staff = user_can("hr_view_all")
+    status = request.args.get("status") or ""
+    where, p = "1=1", []
+    if not staff:
+        emp = _my_employee(u)
+        where += " AND (lr.created_by=? OR lr.employee_id=?)"; p += [u["id"], emp["id"] if emp else -1]
+    if status:
+        where += " AND lr.status=?"; p.append(status)
+    rows = db.execute("SELECT lr.*, lt.name AS type_name FROM leave_requests lr "
+                      "LEFT JOIN leave_types lt ON lt.id=lr.leave_type_id WHERE " + where +
+                      " ORDER BY (lr.status='Pending') DESC, lr.start_date DESC", p).fetchall()
+    pending = db.execute("SELECT COUNT(*) AS c FROM leave_requests WHERE status='Pending'").fetchone()["c"] if staff else 0
+    balances = []
+    if not staff:
+        emp = _my_employee(u)
+        if emp:
+            balances = _leave_balance(emp["id"])
+    return render_template("hr/leave.html", rows=rows, staff=staff, statuses=LEAVE_STATUSES,
+                           f_status=status, pending=pending, balances=balances)
+
+
+@bp.route("/leave/new", methods=["GET", "POST"])
+@login_required
+def leave_new():
+    db = get_db()
+    u = current_user()
+    emp = _my_employee(u)
+    types = db.execute("SELECT * FROM leave_types WHERE active=1 ORDER BY id").fetchall()
+    if request.method == "POST":
+        try:
+            lt = int(request.form.get("leave_type_id") or 0)
+        except ValueError:
+            lt = 0
+        start = (request.form.get("start_date") or "").strip()
+        end = (request.form.get("end_date") or "").strip()
+        try:
+            days = _days_between(start, end)
+        except (ValueError, TypeError):
+            days = 0
+        if not lt or days < 1:
+            flash("leave_invalid")
+            return redirect(url_for("hr.leave_new"))
+        db.execute("""INSERT INTO leave_requests(employee_id,employee_name,leave_type_id,start_date,
+                      end_date,days,reason,status,created_by,created_at,updated_at)
+                      VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                   (emp["id"] if emp else None, (emp["name_en"] if emp else u["full_name"]),
+                    lt, start, end, days, (request.form.get("reason") or "").strip(),
+                    "Pending", u["id"], utcnow(), utcnow()))
+        db.commit()
+        log_audit(u["username"], "leave_request", f"{days}d")
+        return redirect(url_for("hr.leave"))
+    balances = _leave_balance(emp["id"]) if emp else []
+    return render_template("hr/leave_form.html", types=types, balances=balances, emp=emp)
+
+
+@bp.route("/leave/<int:lid>")
+@login_required
+def leave_view(lid):
+    db = get_db()
+    r = db.execute("SELECT lr.*, lt.name AS type_name FROM leave_requests lr "
+                   "LEFT JOIN leave_types lt ON lt.id=lr.leave_type_id WHERE lr.id=?", (lid,)).fetchone()
+    if not r:
+        abort(404)
+    u = current_user()
+    is_owner = (r["created_by"] == u["id"])
+    if not (user_can("hr_view_all") or is_owner):
+        abort(403)
+    return render_template("hr/leave_detail.html", r=r, is_owner=is_owner,
+                           can_decide=user_can("hr_manage"))
+
+
+@bp.route("/leave/<int:lid>/action", methods=["POST"])
+@login_required
+def leave_action(lid):
+    db = get_db()
+    r = db.execute("SELECT * FROM leave_requests WHERE id=?", (lid,)).fetchone()
+    if not r:
+        abort(404)
+    u = current_user()
+    is_owner = (r["created_by"] == u["id"])
+    if not (user_can("hr_view_all") or is_owner):
+        abort(403)
+    a = request.form.get("action")
+    now = utcnow()
+    if a in ("approve", "reject") and user_can("hr_manage") and r["status"] == "Pending":
+        st = "Approved" if a == "approve" else "Rejected"
+        db.execute("UPDATE leave_requests SET status=?, decided_by=?, decided_at=?, updated_at=? WHERE id=?",
+                   (st, u["full_name"], now, now, lid))
+        log_audit(u["username"], f"leave_{a}", str(lid))
+    elif a == "cancel" and (is_owner or user_can("hr_manage")) and r["status"] in ("Pending", "Approved"):
+        db.execute("UPDATE leave_requests SET status='Cancelled', updated_at=? WHERE id=?", (now, lid))
+        log_audit(u["username"], "leave_cancel", str(lid))
+    else:
+        abort(403)
+    db.commit()
+    return redirect(url_for("hr.leave_view", lid=lid))
