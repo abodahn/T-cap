@@ -163,10 +163,11 @@
 .tc-bulkbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
   padding: 10px 14px; margin-bottom: 12px; background: var(--surface-2);
   border: var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
+.tc-bulkbar[hidden] { display: none; }   /* [hidden] must beat display:flex */
 .tc-bulkbar__n { font-size: 13px; color: var(--text-muted); }
 .tc-bulkbar__n b { color: var(--text); }
-.tc-bulkbar__sp { flex: 0 0 8px; }
-.tc-bulkbar .tc-select { padding: 6px 10px; font-size: 13px; }
+.tc-bulkbar__sp { flex: 1; }             /* push actions together, fill the gap */
+.tc-bulkbar .tc-select { padding: 6px 10px; font-size: 13px; width: auto; max-width: 220px; }
 .tc-chk-col { width: 34px; text-align: center; }
 .tc-chk-col input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--brand-grey); cursor: pointer; }
 
