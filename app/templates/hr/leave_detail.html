@@ -19,7 +19,7 @@
 
 <div class="tc-issue">
   <div>
-    <div class="tc-section">{{ t('hr_reason') }}</div>
+    <div class="tc-section">{{ t('reason') }}</div>
     <div class="tc-desc">{{ r['reason'] or '—' }}</div>
     {% if r['decided_by'] %}<div class="tc-section">{{ t('hr_decision') }}</div>
     <div class="tc-desc tc-faint">{{ r['status'] }} · {{ r['decided_by'] }} · {{ (r['decided_at'] or '')[:16] }}</div>{% endif %}
