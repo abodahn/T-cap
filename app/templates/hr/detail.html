@@ -15,6 +15,7 @@
     </div>
   </div>
   <div class="tc-btnbar">
+    {% if can_manage %}<a class="tc-btn tc-btn--primary" href="{{ url_for('hr.employee_edit', eid=e['id']) }}">{{ t('edit') }}</a>{% endif %}
     <a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.index') }}">← {{ t('back') }}</a>
   </div>
 </div>

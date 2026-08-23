@@ -9,7 +9,8 @@
     <h1 class="tc-h1">{{ t('hr_directory') }}</h1>
   </div>
   <div class="tc-btnbar">
-    {% if can_manage %}<a class="tc-btn tc-btn--primary" href="{{ url_for('hr.import_data') }}">⭱ {{ t('hr_import') }}</a>{% endif %}
+    {% if can_manage %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.import_data') }}">⭱ {{ t('hr_import') }}</a>
+    <a class="tc-btn tc-btn--primary" href="{{ url_for('hr.employee_new') }}">＋ {{ t('hr_emp_new') }}</a>{% endif %}
   </div>
 </div>
 {% include 'hr/_subnav.html' %}

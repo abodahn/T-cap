@@ -429,5 +429,8 @@
   "hr_reject": "Reject",
   "leave_invalid": "Please choose a type and a valid date range.",
   "hr_card_myhr": "Your profile, leave balance, payslips and requests.",
-  "hr_card_leave": "Request time off and track approvals."
+  "hr_card_leave": "Request time off and track approvals.",
+  "hr_emp_new": "Add employee",
+  "hr_emp_edit": "Edit employee",
+  "hr_emp_name_required": "Employee name is required."
 }

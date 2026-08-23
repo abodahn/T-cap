@@ -215,6 +215,68 @@ def view(eid):
                            can_manage=user_can("hr_manage"), confidential=CONFIDENTIAL)
 
 
+# Editable employee fields (text) and payroll fields (numeric-coerced).
+_EMP_TEXT = ["employee_no", "name_en", "name_ar", "email", "phone", "job_title",
+             "department", "section", "location", "hire_date", "status", "notes",
+             "bank_name", "bank_code", "bank_account", "payable"]
+_EMP_NUM = ["basic_salary", "insurance_wage", "advance_balance", "advance_installment"]
+
+
+def _emp_form_values():
+    data = {c: _cell(request.form.get(c)) for c in _EMP_TEXT}
+    for c in _EMP_NUM:
+        data[c] = _num(request.form.get(c))
+    data["status"] = data.get("status") or "active"
+    try:
+        mid = int(request.form.get("manager_id") or 0)
+        data["manager_id"] = mid or None
+    except ValueError:
+        data["manager_id"] = None
+    return data
+
+
+@bp.route("/employee/new", methods=["GET", "POST"])
+@permission_required("hr_manage")
+def employee_new():
+    db = get_db()
+    if request.method == "POST":
+        data = _emp_form_values()
+        if not (data.get("name_en") or data.get("name_ar")):
+            flash("hr_emp_name_required")
+            return redirect(url_for("hr.employee_new"))
+        cols = list(data.keys()) + ["created_at", "updated_at"]
+        ph = ",".join(["?"] * len(cols))
+        db.execute(f"INSERT INTO employees({','.join(cols)}) VALUES({ph})",
+                   [data[c] for c in data] + [utcnow(), utcnow()])
+        eid = db.execute("SELECT MAX(id) AS m FROM employees").fetchone()["m"]
+        db.commit()
+        log_audit(current_user()["username"], "hr_emp_create", data.get("name_en") or data.get("name_ar"))
+        return redirect(url_for("hr.view", eid=eid))
+    mgrs = db.execute("SELECT id,name_en FROM employees ORDER BY name_en").fetchall()
+    return render_template("hr/employee_form.html", e=None, mgrs=mgrs, mode="new")
+
+
+@bp.route("/employee/<int:eid>/edit", methods=["GET", "POST"])
+@permission_required("hr_manage")
+def employee_edit(eid):
+    db = get_db()
+    e = db.execute("SELECT * FROM employees WHERE id=?", (eid,)).fetchone()
+    if not e:
+        abort(404)
+    if request.method == "POST":
+        data = _emp_form_values()
+        if not (data.get("name_en") or data.get("name_ar")):
+            flash("hr_emp_name_required")
+            return redirect(url_for("hr.employee_edit", eid=eid))
+        sets = ", ".join(f"{c}=?" for c in data) + ", updated_at=?"
+        db.execute(f"UPDATE employees SET {sets} WHERE id=?", [data[c] for c in data] + [utcnow(), eid])
+        db.commit()
+        log_audit(current_user()["username"], "hr_emp_edit", e["name_en"] or str(eid))
+        return redirect(url_for("hr.view", eid=eid))
+    mgrs = db.execute("SELECT id,name_en FROM employees WHERE id<>? ORDER BY name_en", (eid,)).fetchall()
+    return render_template("hr/employee_form.html", e=e, mgrs=mgrs, mode="edit")
+
+
 @bp.route("/import", methods=["GET", "POST"])
 @permission_required("hr_manage")
 def import_data():

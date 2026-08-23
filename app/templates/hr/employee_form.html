@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_emp_new') if mode=='new' else t('hr_emp_edit') }}{% endblock %}
+{% macro val(f) %}{{ e[f] if e and e[f] is not none else '' }}{% endmacro %}
+{% macro field(f, label, type='text') %}
+  <div class="tc-field"><label class="tc-label">{{ label }}</label>
+    <input class="tc-input" type="{{ type }}" name="{{ f }}" value="{{ val(f) }}" style="width:100%"></div>
+{% endmacro %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · {{ t('hr_directory') }}</span>
+    <h1 class="tc-h1">{{ t('hr_emp_new') if mode=='new' else t('hr_emp_edit') }}</h1>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.index') if mode=='new' else url_for('hr.view', eid=e['id']) }}">← {{ t('back') }}</a></div>
+</div>
+
+<form method="post" style="max-width:860px">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+  <div class="tc-card" style="margin-bottom:16px"><div class="tc-card__body">
+    <div class="tc-section" style="margin-top:0">{{ t('hr_profile') }}</div>
+    <div class="tc-grid-2">
+      {{ field('name_en', t('hr_name_en')) }}
+      {{ field('name_ar', t('hr_name_ar')) }}
+      {{ field('employee_no', t('hr_code')) }}
+      {{ field('job_title', t('hr_job_title')) }}
+      {{ field('email', t('email'), 'email') }}
+      {{ field('phone', t('hr_phone')) }}
+      {{ field('department', t('department')) }}
+      {{ field('section', t('hr_section')) }}
+      {{ field('location', t('site')) }}
+      {{ field('hire_date', t('hr_hire_date'), 'date') }}
+      <div class="tc-field"><label class="tc-label">{{ t('hr_manager') }}</label>
+        <select class="tc-select" name="manager_id" style="width:100%">
+          <option value="">—</option>
+          {% for m in mgrs %}<option value="{{ m['id'] }}" {{ 'selected' if e and e['manager_id']==m['id'] }}>{{ m['name_en'] }}</option>{% endfor %}
+        </select></div>
+      <div class="tc-field"><label class="tc-label">{{ t('status') }}</label>
+        <select class="tc-select" name="status" style="width:100%">
+          {% for s in ['active','inactive'] %}<option value="{{ s }}" {{ 'selected' if (e['status'] if e else 'active')==s }}>{{ s }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_status_notes') }}</label>
+      <textarea class="tc-textarea" name="notes" rows="2" style="width:100%">{{ val('notes') }}</textarea></div>
+  </div></div>
+
+  <div class="tc-card" style="margin-bottom:16px"><div class="tc-card__body">
+    <div class="tc-section" style="margin-top:0">🔒 {{ t('hr_payroll') }}</div>
+    <div class="tc-grid-2">
+      {{ field('basic_salary', t('hr_basic_salary'), 'number') }}
+      {{ field('insurance_wage', t('hr_insurance_wage'), 'number') }}
+      {{ field('bank_name', t('hr_bank_name')) }}
+      {{ field('bank_code', t('hr_bank_code')) }}
+      {{ field('bank_account', t('hr_bank_account')) }}
+      {{ field('payable', t('hr_payable')) }}
+      {{ field('advance_balance', t('hr_advance_balance'), 'number') }}
+      {{ field('advance_installment', t('hr_advance_installment'), 'number') }}
+    </div>
+  </div></div>
+
+  <button class="tc-btn tc-btn--primary">{{ t('save') }}</button>
+</form>
+{% endblock %}
