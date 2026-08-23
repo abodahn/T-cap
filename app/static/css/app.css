@@ -150,6 +150,15 @@
 .tc-kpi a { color: var(--text-muted); text-decoration: none; }
 .tc-kpi a:hover { color: var(--text); }
 
+/* sortable table headers */
+.tc-th-sort { display: inline-flex; align-items: center; gap: 6px; color: inherit;
+  cursor: pointer; user-select: none; white-space: nowrap; }
+.tc-th-sort:hover { color: var(--text); }
+.tc-th-sort.on { color: var(--text); }
+.tc-th-arrow { font-size: 10px; opacity: .35; line-height: 1; }
+.tc-th-sort:hover .tc-th-arrow { opacity: .7; }
+.tc-th-sort.on .tc-th-arrow { opacity: 1; }
+
 /* cards + table rows: subtle interaction */
 .tc-card { transition: border-color var(--transition); }
 .tc-table tbody tr { transition: background var(--transition); }

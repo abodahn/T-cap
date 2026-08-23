@@ -21,6 +21,28 @@ def _stamp_first_response(db, t):
         db.execute("UPDATE tickets SET first_response_at=? WHERE id=?", (utcnow(), t["id"]))
 
 
+# Sortable columns -> safe SQL expressions (portable across sqlite + postgres).
+# LOWER() gives case-insensitive text sort on both; priority uses a severity rank.
+SORTS = {
+    "ref": "ref",
+    "subject": "LOWER(subject)",
+    "priority": ("CASE priority WHEN 'Critical' THEN 0 WHEN 'High' THEN 1 "
+                 "WHEN 'Medium' THEN 2 WHEN 'Low' THEN 3 ELSE 4 END"),
+    "status": "LOWER(status)",
+    "sla": "sla_due",
+    "agent": "LOWER(COALESCE(assigned_agent,''))",
+    "created": "created_at",
+}
+
+
+def _order_by(sort, direction):
+    """Return a safe ORDER BY clause. Falls back to the default view ordering
+    (open tickets first, soonest SLA on top) when no valid column is chosen."""
+    if sort in SORTS:
+        return f"{SORTS[sort]} {'DESC' if direction == 'desc' else 'ASC'}"
+    return "(status IN ('Resolved','Closed','Cancelled')), sla_due"
+
+
 def _own_scope(u):
     """Ticket visibility filter. Agents / oversight roles (itsm_edit or
     reports_view) see every ticket; everyone else (i.e. employees) sees only
@@ -40,6 +62,8 @@ def index():
     priority = request.args.get("priority") or ""
     scope = request.args.get("scope") or ""
     q = (request.args.get("q") or "").strip()
+    sort = request.args.get("sort") or ""
+    sdir = "desc" if request.args.get("dir") == "desc" else "asc"
     u = current_user()
     own_sql, own_p = _own_scope(u)
     sql = "SELECT * FROM tickets WHERE 1=1" + own_sql
@@ -54,7 +78,7 @@ def index():
         sql += " AND (assigned_agent IS NULL OR assigned_agent='')"
     if q:
         sql += " AND (subject LIKE ? OR ref LIKE ? OR requester LIKE ?)"; p += [f"%{q}%"] * 3
-    sql += " ORDER BY (status IN ('Resolved','Closed','Cancelled')), sla_due"
+    sql += " ORDER BY " + _order_by(sort, sdir)
     rows = db.execute(sql, p).fetchall()
     tickets = []
     for r in rows:
@@ -73,7 +97,8 @@ def index():
     }
     return render_template("itsm/list.html", tickets=tickets, statuses=core.STATUSES,
                            priorities=core.PRIORITIES, f_status=status, f_priority=priority,
-                           scope=scope, q=q, counts=counts, scope_counts=scope_counts)
+                           scope=scope, q=q, counts=counts, scope_counts=scope_counts,
+                           sort=sort, sdir=sdir)
 
 
 @bp.route("/export.xlsx")
@@ -91,7 +116,9 @@ def export_xlsx():
         sql += " AND priority=?"; p.append(priority)
     if q:
         sql += " AND (subject LIKE ? OR ref LIKE ?)"; p += [f"%{q}%", f"%{q}%"]
-    sql += " ORDER BY created_at DESC"
+    sort = request.args.get("sort") or ""
+    sdir = "desc" if request.args.get("dir") == "desc" else "asc"
+    sql += " ORDER BY " + (_order_by(sort, sdir) if sort in SORTS else "created_at DESC")
     ts = db.execute(sql, p).fetchall()
     headers = ["Ref", "Subject", "Type", "Category", "Priority", "Status", "Requester",
                "Agent", "Site", "SLA Due", "Created"]

@@ -9,7 +9,7 @@
     <h1 class="tc-h1">{{ t('tickets') }}</h1>
   </div>
   <div class="tc-btnbar">
-    <a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.export_xlsx', status=f_status, priority=f_priority, q=q) }}">⭳ Excel</a>
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.export_xlsx', status=f_status, priority=f_priority, q=q, sort=sort, dir=sdir) }}">⭳ Excel</a>
     {% if user_can('itsm_create') %}<a class="tc-btn tc-btn--primary" href="{{ url_for('itsm.new') }}">＋ {{ t('new_ticket') }}</a>{% endif %}
   </div>
 </div>
@@ -37,9 +37,16 @@
 
 <div class="tc-table-wrap">
   <table class="tc-table">
+    {% macro sortth(key, label) %}
+      {% set nd = 'desc' if (sort==key and sdir=='asc') else 'asc' %}
+      <th><a class="tc-th-sort {{ 'on' if sort==key }}"
+             href="{{ url_for('itsm.index', scope=scope, status=f_status, priority=f_priority, q=q, sort=key, dir=nd) }}">
+        {{ label }}<span class="tc-th-arrow">{{ '▲' if (sort==key and sdir=='asc') else ('▼' if sort==key else '⇅') }}</span>
+      </a></th>
+    {% endmacro %}
     <thead><tr>
-      <th>{{ t('ticket') }}</th><th>{{ t('subject') }}</th><th>{{ t('priority') }}</th>
-      <th>{{ t('status') }}</th><th>SLA</th><th>{{ t('assigned_agent') }}</th>
+      {{ sortth('ref', t('ticket')) }}{{ sortth('subject', t('subject')) }}{{ sortth('priority', t('priority')) }}
+      {{ sortth('status', t('status')) }}{{ sortth('sla', 'SLA') }}{{ sortth('agent', t('assigned_agent')) }}
     </tr></thead>
     <tbody>
       {% for item in tickets %}{% set r = item.r %}{% set s = item.sla %}
