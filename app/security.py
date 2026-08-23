@@ -15,6 +15,8 @@ PERMISSIONS = {
     "asm_view", "asm_create", "asm_edit", "asm_delete",
     # Monitoring
     "mon_view", "mon_manage",
+    # HR  (hr_view = own record; hr_view_all = directory; hr_manage = edit + payroll/bank)
+    "hr_view", "hr_view_all", "hr_manage",
     # Platform / admin
     "reports_view", "admin_access", "manage_users", "manage_settings",
 }
@@ -45,6 +47,9 @@ ROLES = {
                         "mon_view", "reports_view"},
     # employee: itsm_view only (NOT itsm_view_all) => sees & works ONLY own tickets.
     "employee":        {"view_dashboard", "itsm_view", "itsm_create", "asm_view"},
+    # HR manager: full HR module (directory + payroll/bank + import), plus can raise tickets.
+    "hr_manager":      {"view_dashboard", "hr_view", "hr_view_all", "hr_manage",
+                        "itsm_view", "itsm_create", "reports_view"},
 }
 
 # Permissions grouped by module (for the matrix UI) + human labels.
@@ -53,6 +58,7 @@ PERMISSION_GROUPS = {
     "ITSM": ["itsm_view", "itsm_view_all", "itsm_create", "itsm_edit", "itsm_assign", "itsm_close"],
     "Assets": ["asm_view", "asm_create", "asm_edit", "asm_delete"],
     "Monitoring": ["mon_view", "mon_manage"],
+    "HR": ["hr_view", "hr_view_all", "hr_manage"],
 }
 PERMISSION_LABELS = {
     "view_dashboard": "Dashboard", "reports_view": "Reports", "admin_access": "Admin access",
@@ -62,12 +68,15 @@ PERMISSION_LABELS = {
     "itsm_assign": "Assign", "itsm_close": "Resolve/Close",
     "asm_view": "View assets", "asm_create": "Create assets", "asm_edit": "Edit assets",
     "asm_delete": "Delete assets", "mon_view": "View monitoring", "mon_manage": "Manage monitoring",
+    "hr_view": "View own HR record", "hr_view_all": "HR directory (all staff)",
+    "hr_manage": "Manage HR (edit + payroll)",
 }
 # Module -> permissions that mean "full control" vs "view only" (responsibility matrix)
 MODULE_PERMS = {
     "ITSM": ("itsm_edit", "itsm_view"),
     "Assets": ("asm_edit", "asm_view"),
     "Monitoring": ("mon_manage", "mon_view"),
+    "HR": ("hr_manage", "hr_view_all"),
     "Reports": (None, "reports_view"),
     "Admin": ("manage_users", "admin_access"),
 }
@@ -79,6 +88,7 @@ ROLE_LABELS = {
     "monitoring_admin": "Monitoring Admin", "security_viewer": "Security Viewer",
     "dept_manager": "Department Manager", "executive": "Executive",
     "auditor": "Auditor / Read-only", "employee": "Employee",
+    "hr_manager": "HR Manager",
 }
 
 

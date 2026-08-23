@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}{{ e['name_en'] or e['employee_no'] }}{% endblock %}
+{% macro prop(label, value) %}
+  <div class="tc-prop"><dt>{{ label }}</dt><dd class="tc-prop__v">{{ value if (value is not none and value != '') else '—' }}</dd></div>
+{% endmacro %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · <span class="tc-mono">{{ e['employee_no'] }}</span></span>
+    <h1 class="tc-issue__title">{{ e['name_en'] or e['name_ar'] or e['employee_no'] }}</h1>
+    {% if e['name_ar'] %}<div class="tc-faint" dir="rtl" style="font-size:15px">{{ e['name_ar'] }}</div>{% endif %}
+  </div>
+  <div class="tc-btnbar">
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.index') }}">← {{ t('back') }}</a>
+  </div>
+</div>
+
+<div class="tc-metabar">
+  {{ chip(e['status'] or 'active', 'success' if (e['status'] or 'active')=='active' else '') }}
+  {% if e['department'] %}<span class="tc-pill">{{ e['department'] }}</span>{% endif %}
+  {% if e['section'] %}<span class="tc-pill">{{ e['section'] }}</span>{% endif %}
+</div>
+
+<div class="tc-issue">
+  <div>
+    <div class="tc-section">{{ t('hr_profile') }}</div>
+    <dl class="tc-props">
+      {{ prop(t('hr_code'), e['employee_no']) }}
+      {{ prop(t('hr_name_en'), e['name_en']) }}
+      {{ prop(t('hr_name_ar'), e['name_ar']) }}
+      {{ prop(t('email'), e['email']) }}
+      {{ prop(t('hr_phone'), e['phone']) }}
+      {{ prop(t('department'), e['department']) }}
+      {{ prop(t('hr_section'), e['section']) }}
+      {{ prop(t('hr_job_title'), e['job_title']) }}
+      {{ prop(t('site'), e['location']) }}
+      {{ prop(t('hr_manager'), mgr['name_en'] if mgr else None) }}
+      {{ prop(t('hr_hire_date'), e['hire_date']) }}
+      {{ prop(t('hr_status_notes'), e['notes']) }}
+    </dl>
+  </div>
+
+  <div>
+    {% if can_manage %}
+    <div class="tc-section">🔒 {{ t('hr_payroll') }}</div>
+    <dl class="tc-props">
+      {{ prop(t('hr_basic_salary'), e['basic_salary']) }}
+      {{ prop(t('hr_insurance_wage'), e['insurance_wage']) }}
+      {{ prop(t('hr_bank_name'), e['bank_name']) }}
+      {{ prop(t('hr_bank_code'), e['bank_code']) }}
+      {{ prop(t('hr_bank_account'), e['bank_account']) }}
+      {{ prop(t('hr_payable'), e['payable']) }}
+      {{ prop(t('hr_advance_balance'), e['advance_balance']) }}
+      {{ prop(t('hr_advance_installment'), e['advance_installment']) }}
+    </dl>
+    {% else %}
+    <div class="tc-card"><div class="tc-card__body tc-faint" style="text-align:center;padding:24px">
+      🔒 {{ t('hr_payroll_restricted') }}
+    </div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

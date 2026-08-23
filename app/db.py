@@ -146,6 +146,16 @@ CREATE TABLE IF NOT EXISTS ticket_events(
   minutes INTEGER DEFAULT 0, created_at TEXT,
   FOREIGN KEY(ticket_id) REFERENCES tickets(id) ON DELETE CASCADE);
 
+CREATE TABLE IF NOT EXISTS employees(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, employee_no TEXT UNIQUE, name_en TEXT,
+  name_ar TEXT, email TEXT, phone TEXT, department TEXT, section TEXT,
+  job_title TEXT, location TEXT, status TEXT DEFAULT 'active', hire_date TEXT,
+  probation_end TEXT, contract_end TEXT, manager_id INTEGER, user_id INTEGER,
+  -- payroll / banking (confidential — gated behind hr_manage) --
+  basic_salary REAL, insurance_wage REAL, bank_code TEXT, bank_name TEXT,
+  bank_account TEXT, payable TEXT, advance_balance REAL, advance_installment REAL,
+  notes TEXT, created_at TEXT, updated_at TEXT);
+
 CREATE TABLE IF NOT EXISTS assets(
   id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id TEXT UNIQUE, name TEXT,
   category TEXT, brand TEXT, model TEXT, serial TEXT, company TEXT, site TEXT,
@@ -187,6 +197,10 @@ _TICKET_MIGRATIONS = [
 _PERM_BACKFILL = {
     "itsm_view_all": ["it_admin", "it_agent", "asset_manager", "monitoring_admin",
                       "dept_manager", "executive", "auditor"],
+    # HR module — grant the HR manager role its perms on existing installs.
+    "hr_view":     ["hr_manager"],
+    "hr_view_all": ["hr_manager"],
+    "hr_manage":   ["hr_manager"],
 }
 
 

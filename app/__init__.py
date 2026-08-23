@@ -28,6 +28,7 @@ NAV_SYSTEMS = [
     ("itsm", "itsm.index", "01", "itsm_view"),
     ("asm", "asm.index", "02", "asm_view"),
     ("monitoring", "monitoring.index", "03", "mon_view"),
+    ("hr", "hr.index", "04", "hr_view_all"),
 ]
 NAV_PLATFORM = [
     ("dashboard", "main.dashboard", "◆", "view_dashboard"),
@@ -88,7 +89,8 @@ def create_app():
     from app.routes.monitoring import bp as mon_bp
     from app.routes.admin import bp as admin_bp
     from app.routes.agent_api import bp as agent_bp
-    for bp in (auth_bp, main_bp, itsm_bp, asm_bp, mon_bp, admin_bp, agent_bp):
+    from app.routes.hr import bp as hr_bp
+    for bp in (auth_bp, main_bp, itsm_bp, asm_bp, mon_bp, admin_bp, agent_bp, hr_bp):
         app.register_blueprint(bp)
 
     @app.errorhandler(403)

@@ -88,6 +88,8 @@
           <div class="tc-alert tc-alert--ok"><b>{{ t('endpoint_enrolled') }}</b> — {{ parts[1] }} · {{ t('token') }}: <span class="tc-mono">{{ parts[2] }}</span><br><small class="tc-faint">{{ t('token_once') }}</small></div>
           {% elif m.startswith('bulk_done:') %}{% set parts = m.split(':') %}
           <div class="tc-alert tc-alert--ok"><b>{{ parts[1] }}</b> {{ t('tickets_updated') }}</div>
+          {% elif m.startswith('hr_import_done:') %}{% set parts = m.split(':') %}
+          <div class="tc-alert tc-alert--ok">{{ t('hr_import_result') }} — {{ t('hr_added') }}: <b>{{ parts[1] }}</b> · {{ t('hr_updated') }}: <b>{{ parts[2] }}</b> · {{ t('hr_skipped') }}: <b>{{ parts[3] }}</b></div>
           {% else %}<div class="tc-alert">{{ t(m) }}</div>{% endif %}
         {% endfor %}
       {% endif %}{% endwith %}
