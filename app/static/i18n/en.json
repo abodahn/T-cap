@@ -262,5 +262,6 @@
   "close": "Close",
   "confirm_bulk_close": "Close all selected tickets?",
   "select_all": "Select all",
-  "tickets_updated": "tickets updated"
+  "tickets_updated": "tickets updated",
+  "confirm_close_own": "Close this ticket?"
 }

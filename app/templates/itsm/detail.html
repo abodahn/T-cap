@@ -13,7 +13,7 @@
     <h1 class="tc-issue__title">{{ ticket['subject'] }}</h1>
   </div>
   <div class="tc-btnbar">
-    {% if can_edit and open %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.edit', ref=ticket['ref']) }}">{{ t('edit') }}</a>{% endif %}
+    {% if can_act and open %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.edit', ref=ticket['ref']) }}">{{ t('edit') }}</a>{% endif %}
     <a class="tc-btn tc-btn--ghost" href="{{ url_for('itsm.index') }}">← {{ t('back') }}</a>
   </div>
 </div>
@@ -70,20 +70,24 @@
     </div>
 
     <!-- Composer -->
-    {% if can_edit %}
+    {% if can_act %}
     <div class="tc-composer" style="margin-top:var(--space-4)">
       <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}">
         {{ act('comment') }}
         <textarea name="comment" placeholder="{{ t('add_comment') }}…" required></textarea>
         <div class="tc-composer__bar">
+          {% if can_edit %}
           <div class="tc-composer__seg">
             <label><input type="radio" name="internal" value="" checked> {{ t('response') }}</label>
             <label><input type="radio" name="internal" value="1"> 🔒 {{ t('internal') }}</label>
           </div>
+          {% else %}<span></span>{% endif %}
           <button class="tc-btn tc-btn--primary tc-btn--sm">{{ t('save') }}</button>
         </div>
       </form>
     </div>
+    {% endif %}
+    {% if can_edit %}
     <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}" class="tc-toolbar" style="margin-top:12px">
       {{ act('worklog') }}
       <span class="tc-faint" style="font-size:13px">⏱ {{ t('log_work') }}</span>
@@ -150,6 +154,22 @@
       {% elif ticket['status']=='Resolved' %}
       <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}">{{ act('close') }}
         <button class="tc-btn tc-btn--primary tc-btn--block">✓ {{ t('close_ticket') }}</button></form>
+      <details>
+        <summary class="tc-btn tc-btn--block" style="cursor:pointer">↺ {{ t('reopen') }}</summary>
+        <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}" style="margin-top:10px">{{ act('reopen') }}
+          <input class="tc-input" name="reason" placeholder="{{ t('reason') }}">
+          <button class="tc-btn tc-btn--block tc-mt">↺ {{ t('reopen') }}</button></form>
+      </details>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if can_act and not can_edit %}
+    <div class="tc-rail-actions">
+      {% if open %}
+      <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}">{{ act('close') }}
+        <button class="tc-btn tc-btn--block" onclick="return confirm('{{ t('confirm_close_own') }}')">✓ {{ t('close_ticket') }}</button></form>
+      {% elif ticket['status']=='Resolved' %}
       <details>
         <summary class="tc-btn tc-btn--block" style="cursor:pointer">↺ {{ t('reopen') }}</summary>
         <form method="post" action="{{ url_for('itsm.action', ref=ticket['ref']) }}" style="margin-top:10px">{{ act('reopen') }}

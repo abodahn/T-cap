@@ -262,5 +262,6 @@
   "close": "إغلاق",
   "confirm_bulk_close": "إغلاق كل التذاكر المحددة؟",
   "select_all": "تحديد الكل",
-  "tickets_updated": "تذكرة تم تحديثها"
+  "tickets_updated": "تذكرة تم تحديثها",
+  "confirm_close_own": "إغلاق هذه التذكرة؟"
 }

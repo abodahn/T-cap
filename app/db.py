@@ -179,7 +179,15 @@ _TICKET_MIGRATIONS = [
     ("first_response_at", "TEXT"), ("closed_at", "TEXT"), ("resolution", "TEXT"),
     ("closure_category", "TEXT"), ("root_cause", "TEXT"), ("reopen_reason", "TEXT"),
     ("escalation_level", "INTEGER DEFAULT 0"), ("time_spent_min", "INTEGER DEFAULT 0"),
+    ("created_by", "INTEGER"),  # user id of the requester — stable ticket ownership
 ]
+
+# Permissions added after the initial role_perms seed. Ensured on every boot so
+# existing installs (already-seeded role_perms) pick them up. Idempotent.
+_PERM_BACKFILL = {
+    "itsm_view_all": ["it_admin", "it_agent", "asset_manager", "monitoring_admin",
+                      "dept_manager", "executive", "auditor"],
+}
 
 
 def _columns(conn, table):
@@ -205,6 +213,19 @@ def _migrate(conn):
     conn.commit()
 
 
+def _backfill_perms(conn):
+    """Ensure permissions added after the initial role_perms seed reach existing
+    installs. Idempotent; runs after _seed so it never suppresses a fresh seed."""
+    try:
+        for perm, roles in _PERM_BACKFILL.items():
+            for r in roles:
+                conn.execute("INSERT OR IGNORE INTO role_perms(role,perm) VALUES(?,?)", (r, perm))
+        conn.commit()
+    except Exception:
+        if hasattr(conn, "rollback"):
+            conn.rollback()
+
+
 def init_db():
     conn = _connect()
     try:
@@ -212,6 +233,7 @@ def init_db():
         conn.commit()
         _migrate(conn)
         _seed(conn)
+        _backfill_perms(conn)
     finally:
         conn.close()
 

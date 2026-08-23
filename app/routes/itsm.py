@@ -43,15 +43,33 @@ def _order_by(sort, direction):
     return "(status IN ('Resolved','Closed','Cancelled')), sla_due"
 
 
+# --- Ownership & visibility -------------------------------------------------
+# A ticket is "owned" by the user who raised it. Ownership keys on created_by
+# (stable user id); legacy rows with no created_by fall back to a requester
+# name match. Users with itsm_view_all see every ticket; everyone else (the
+# employee role) sees and works ONLY their own.
+
+def _owns(t):
+    u = current_user()
+    if not u:
+        return False
+    cb = t["created_by"] if "created_by" in t.keys() else None
+    if cb is not None:
+        return cb == u["id"]
+    return (t["requester"] or "") == (u["full_name"] or "")
+
+
+def _can_view(t):
+    """May the current user see this ticket at all?"""
+    return user_can("itsm_view_all") or _owns(t)
+
+
 def _own_scope(u):
-    """Ticket visibility filter. Agents / oversight roles (itsm_edit or
-    reports_view) see every ticket; everyone else (i.e. employees) sees only
-    tickets they raised or are assigned to. Returns (sql_fragment, params).
-    ponytail: matches on full_name like the rest of the module; add a
-    requester_id column if two users ever share a name."""
-    if user_can("itsm_edit") or user_can("reports_view"):
+    """List visibility filter. Returns (sql_fragment, params).
+    itsm_view_all => every ticket; otherwise only tickets the user raised."""
+    if user_can("itsm_view_all"):
         return "", []
-    return " AND (requester=? OR assigned_agent=?)", [u["full_name"], u["full_name"]]
+    return " AND (created_by=? OR requester=?)", [u["id"], u["full_name"]]
 
 
 @bp.route("/")
@@ -186,8 +204,8 @@ def new():
         db.execute(
             """INSERT INTO tickets(ref,subject,description,type,category,subcategory,
                priority,impact,urgency,status,requester,department,site,assigned_team,
-               assigned_agent,asset_ref,sla_due,response_due,created_at,updated_at)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               assigned_agent,asset_ref,sla_due,response_due,created_at,updated_at,created_by)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (ref, request.form.get("subject", "").strip(), request.form.get("description", "").strip(),
              request.form.get("type") or "Incident", request.form.get("category") or "Other",
              request.form.get("subcategory") or "", pri, impact, urgency, "New",
@@ -195,7 +213,7 @@ def new():
              request.form.get("department") or u["department"],
              request.form.get("site") or u["site"], "Service Desk",
              request.form.get("assigned_agent") or "", request.form.get("asset_ref") or "",
-             res_due, resp_due, utcnow(), utcnow()))
+             res_due, resp_due, utcnow(), utcnow(), u["id"]))
         tid = db.execute("SELECT id FROM tickets WHERE ref=?", (ref,)).fetchone()["id"]
         _event(db, tid, "system", "Ticket created", f"Priority {pri} ({impact} / {urgency})")
         db.commit()
@@ -207,12 +225,17 @@ def new():
 
 
 @bp.route("/<ref>/edit", methods=["GET", "POST"])
-@permission_required("itsm_edit")
+@permission_required("itsm_view")
 def edit(ref):
     db = get_db()
     tk = db.execute("SELECT * FROM tickets WHERE ref=?", (ref,)).fetchone()
     if not tk:
         abort(404)
+    # Agents edit any ticket; an owner may edit only their own, and only while open.
+    if not user_can("itsm_edit"):
+        open_ = tk["status"] not in ("Resolved", "Closed", "Cancelled")
+        if not (_owns(tk) and open_):
+            abort(403)
     if request.method == "POST":
         from datetime import datetime, timezone
         impact = request.form.get("impact") or tk["impact"]
@@ -247,32 +270,46 @@ def view(ref):
     t = db.execute("SELECT * FROM tickets WHERE ref=?", (ref,)).fetchone()
     if not t:
         abort(404)
-    if not (user_can("itsm_edit") or user_can("reports_view")):
-        name = current_user()["full_name"]
-        if t["requester"] != name and t["assigned_agent"] != name:
-            abort(403)
+    if not _can_view(t):
+        abort(403)
     sla = core.compute_sla(t)
-    internal_ok = user_can("itsm_edit")
-    if internal_ok:
+    can_edit = user_can("itsm_edit")   # full agent toolkit
+    can_act = can_edit or _owns(t)     # owner may work their own ticket
+    if can_edit:
         events = db.execute("SELECT * FROM ticket_events WHERE ticket_id=? ORDER BY created_at, id", (t["id"],)).fetchall()
     else:
         events = db.execute("SELECT * FROM ticket_events WHERE ticket_id=? AND is_internal=0 ORDER BY created_at, id", (t["id"],)).fetchall()
     asset = db.execute("SELECT asset_id,name FROM assets WHERE asset_id=?", (t["asset_ref"],)).fetchone() if t["asset_ref"] else None
     agents = db.execute("SELECT full_name FROM users WHERE role IN ('it_agent','it_admin','monitoring_admin') ORDER BY full_name").fetchall()
     return render_template("itsm/detail.html", ticket=t, sla=sla, events=events, asset=asset,
-                           agents=agents, core=core, can_edit=internal_ok)
+                           agents=agents, core=core, can_edit=can_edit, can_act=can_act,
+                           is_owner=_owns(t))
+
+
+# Actions an owner (non-agent) may take on their OWN ticket. Agent-only actions
+# (assign, assign_me, worklog, resolve, escalate, internal notes) are excluded.
+_OWNER_ACTIONS = {"comment", "close", "reopen"}
 
 
 @bp.route("/<ref>/action", methods=["POST"])
-@permission_required("itsm_edit")
+@permission_required("itsm_view")
 def action(ref):
     db = get_db()
     t = db.execute("SELECT * FROM tickets WHERE ref=?", (ref,)).fetchone()
     if not t:
         abort(404)
+    if not _can_view(t):
+        abort(403)
     u = current_user()
     a = request.form.get("action")
     now = utcnow()
+
+    # Non-agents may only act on their own ticket, and only with owner-safe
+    # actions; force their comments public (no internal notes).
+    agent = user_can("itsm_edit")
+    if not agent:
+        if not _owns(t) or a not in _OWNER_ACTIONS:
+            abort(403)
 
     if a == "assign_me":
         db.execute("UPDATE tickets SET assigned_agent=?, status=CASE WHEN status='New' THEN 'Assigned' ELSE status END, updated_at=? WHERE id=?",
@@ -298,7 +335,7 @@ def action(ref):
 
     elif a == "comment":
         body = (request.form.get("comment") or "").strip()
-        internal = 1 if request.form.get("internal") else 0
+        internal = 1 if (agent and request.form.get("internal")) else 0
         if body:
             _stamp_first_response(db, t)
             _event(db, t["id"], "note" if internal else "comment", body,
