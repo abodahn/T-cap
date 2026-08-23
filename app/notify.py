@@ -94,3 +94,36 @@ def notify_assignment(db, ticket, agent_full_name):
            f"{ticket['subject']} ({ticket['priority']}) was assigned to you.",
            link=f"/itsm/{ticket['ref']}", target_user=row["username"],
            email_to=row["email"], dedup=None)
+
+
+# --- HR notification helpers -----------------------------------------------
+
+def _users_with_perm(db, perm):
+    """Active users whose role grants `perm` (per the editable role_perms table),
+    always including super admins."""
+    roles = {r["role"] for r in db.execute("SELECT DISTINCT role FROM role_perms WHERE perm=?", (perm,)).fetchall()}
+    roles.add("super_admin")
+    ph = ",".join(["?"] * len(roles))
+    return db.execute(f"SELECT username, email FROM users WHERE role IN ({ph}) AND is_active=1",
+                      tuple(roles)).fetchall()
+
+
+def notify_hr_staff(db, title, message, link, severity="info"):
+    """In-app (+email) notification to everyone who can manage HR."""
+    for u in _users_with_perm(db, "hr_manage"):
+        notify(db, severity, "hr", title, message, link=link,
+               target_user=u["username"], email_to=u["email"])
+
+
+def notify_user_by_id(db, uid, title, message, link, severity="info"):
+    row = db.execute("SELECT username, email FROM users WHERE id=?", (uid,)).fetchone()
+    if row:
+        notify(db, severity, "hr", title, message, link=link,
+               target_user=row["username"], email_to=row["email"])
+
+
+def notify_user_by_name(db, full_name, title, message, link, severity="info"):
+    row = db.execute("SELECT username, email FROM users WHERE full_name=?", (full_name,)).fetchone()
+    if row:
+        notify(db, severity, "hr", title, message, link=link,
+               target_user=row["username"], email_to=row["email"])

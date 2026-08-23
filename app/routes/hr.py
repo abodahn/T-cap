@@ -396,6 +396,10 @@ def case_new():
                     utcnow(), utcnow()))
         cid = db.execute("SELECT id FROM hr_cases WHERE ref=?", (ref,)).fetchone()["id"]
         _case_event(db, cid, "system", "Request submitted", _module_label(module))
+        from app.notify import notify_hr_staff
+        notify_hr_staff(db, f"HR request · {ref}",
+                        f"{u['full_name']} raised “{subject}” ({_module_label(module)}).",
+                        url_for("hr.case_view", ref=ref))
         db.commit()
         log_audit(u["username"], "hr_case_create", ref)
         return redirect(url_for("hr.case_view", ref=ref))
@@ -451,6 +455,10 @@ def case_action(ref):
         who = request.form.get("assignee") or ""
         db.execute("UPDATE hr_cases SET assignee=?, updated_at=? WHERE id=?", (who, now, c["id"]))
         _case_event(db, c["id"], "assign", f"Assigned to {who or 'unassigned'}")
+        if who and who != u["full_name"]:
+            from app.notify import notify_user_by_name
+            notify_user_by_name(db, who, f"HR case assigned · {c['ref']}",
+                                f"{c['subject']} was assigned to you.", url_for("hr.case_view", ref=ref))
 
     elif a == "transition" and staff:
         to = request.form.get("to_status") or ""
@@ -466,6 +474,12 @@ def case_action(ref):
                           updated_at=?, closed_at=COALESCE(?, closed_at) WHERE id=?""",
                        (to, decision, reason or c["decision_reason"], now, closed, c["id"]))
             _case_event(db, c["id"], "status", f"Status → {to}", reason)
+            if c["created_by"] and c["created_by"] != u["id"]:
+                from app.notify import notify_user_by_id
+                sev = {"Approved": "success", "Completed": "success", "Rejected": "warning"}.get(to, "info")
+                notify_user_by_id(db, c["created_by"], f"HR request {to} · {c['ref']}",
+                                  f"Your request “{c['subject']}” is now {to}.",
+                                  url_for("hr.case_view", ref=ref), severity=sev)
     else:
         abort(403)
 
@@ -875,12 +889,18 @@ def leave_new():
         if not lt or days < 1:
             flash("leave_invalid")
             return redirect(url_for("hr.leave_new"))
+        who = emp["name_en"] if emp else u["full_name"]
         db.execute("""INSERT INTO leave_requests(employee_id,employee_name,leave_type_id,start_date,
                       end_date,days,reason,status,created_by,created_at,updated_at)
                       VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
-                   (emp["id"] if emp else None, (emp["name_en"] if emp else u["full_name"]),
-                    lt, start, end, days, (request.form.get("reason") or "").strip(),
-                    "Pending", u["id"], utcnow(), utcnow()))
+                   (emp["id"] if emp else None, who, lt, start, end, days,
+                    (request.form.get("reason") or "").strip(), "Pending", u["id"], utcnow(), utcnow()))
+        lid = db.execute("SELECT MAX(id) AS m FROM leave_requests").fetchone()["m"]
+        tname = db.execute("SELECT name FROM leave_types WHERE id=?", (lt,)).fetchone()
+        from app.notify import notify_hr_staff
+        notify_hr_staff(db, f"Leave request · {who}",
+                        f"{who} requested {int(days)} day(s) {tname['name'] if tname else ''} ({start} → {end}).",
+                        url_for("hr.leave_view", lid=lid))
         db.commit()
         log_audit(u["username"], "leave_request", f"{days}d")
         return redirect(url_for("hr.leave"))
@@ -921,6 +941,12 @@ def leave_action(lid):
         st = "Approved" if a == "approve" else "Rejected"
         db.execute("UPDATE leave_requests SET status=?, decided_by=?, decided_at=?, updated_at=? WHERE id=?",
                    (st, u["full_name"], now, now, lid))
+        if r["created_by"]:
+            from app.notify import notify_user_by_id
+            notify_user_by_id(db, r["created_by"], f"Leave {st.lower()}",
+                              f"Your leave request ({r['start_date']} → {r['end_date']}) was {st.lower()} by {u['full_name']}.",
+                              url_for("hr.leave_view", lid=lid),
+                              severity="success" if a == "approve" else "warning")
         log_audit(u["username"], f"leave_{a}", str(lid))
     elif a == "cancel" and (is_owner or user_can("hr_manage")) and r["status"] in ("Pending", "Approved"):
         db.execute("UPDATE leave_requests SET status='Cancelled', updated_at=? WHERE id=?", (now, lid))
