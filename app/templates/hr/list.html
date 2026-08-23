@@ -37,13 +37,13 @@
     </tr></thead>
     <tbody>
       {% for e in employees %}
-      <tr onclick="location='{{ url_for('hr.view', employee_no=e['employee_no']) }}'">
+      <tr onclick="location='{{ url_for('hr.view', eid=e['id']) }}'">
         <td>
-          <a class="tc-cellflex" href="{{ url_for('hr.view', employee_no=e['employee_no']) }}" onclick="event.stopPropagation()" style="color:inherit">
+          <a class="tc-cellflex" href="{{ url_for('hr.view', eid=e['id']) }}" onclick="event.stopPropagation()" style="color:inherit">
             {{ avatar(e['name_en'] or e['name_ar']) }}
             <span class="tc-cellflex__t">
               <span style="font-weight:600;display:block">{{ e['name_en'] or e['name_ar'] or '—' }}</span>
-              <span class="tc-faint tc-mono" style="font-size:12px">{{ e['employee_no'] }}{% if e['name_ar'] and e['name_en'] %} · <span dir="rtl">{{ e['name_ar'] }}</span>{% endif %}</span>
+              <span class="tc-faint tc-mono" style="font-size:12px">{% if e['employee_no'] %}{{ e['employee_no'] }}{% endif %}{% if e['name_ar'] and e['name_en'] %} · <span dir="rtl">{{ e['name_ar'] }}</span>{% endif %}</span>
             </span>
           </a>
         </td>

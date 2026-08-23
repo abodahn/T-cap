@@ -203,11 +203,11 @@ def index():
                            can_manage=user_can("hr_manage"))
 
 
-@bp.route("/<employee_no>")
+@bp.route("/employee/<int:eid>")
 @permission_required("hr_view_all")
-def view(employee_no):
+def view(eid):
     db = get_db()
-    e = db.execute("SELECT * FROM employees WHERE employee_no=?", (employee_no,)).fetchone()
+    e = db.execute("SELECT * FROM employees WHERE id=?", (eid,)).fetchone()
     if not e:
         abort(404)
     mgr = db.execute("SELECT name_en,employee_no FROM employees WHERE id=?", (e["manager_id"],)).fetchone() if e["manager_id"] else None
