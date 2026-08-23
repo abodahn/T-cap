@@ -15,8 +15,9 @@ PERMISSIONS = {
     "asm_view", "asm_create", "asm_edit", "asm_delete",
     # Monitoring
     "mon_view", "mon_manage",
-    # HR  (hr_view = own record; hr_view_all = directory; hr_manage = edit + payroll/bank)
-    "hr_view", "hr_view_all", "hr_manage",
+    # HR  (hr_request = raise/track own HR requests — all staff; hr_view = own record;
+    #      hr_view_all = directory + all cases; hr_manage = edit + payroll + decide cases)
+    "hr_request", "hr_view", "hr_view_all", "hr_manage",
     # Platform / admin
     "reports_view", "admin_access", "manage_users", "manage_settings",
 }
@@ -52,13 +53,18 @@ ROLES = {
                         "itsm_view", "itsm_create", "reports_view"},
 }
 
+# Every authenticated role can raise & track its own HR service requests.
+for _r, _ps in ROLES.items():
+    if "*" not in _ps:
+        _ps.add("hr_request")
+
 # Permissions grouped by module (for the matrix UI) + human labels.
 PERMISSION_GROUPS = {
     "Platform": ["view_dashboard", "reports_view", "admin_access", "manage_users", "manage_settings"],
     "ITSM": ["itsm_view", "itsm_view_all", "itsm_create", "itsm_edit", "itsm_assign", "itsm_close"],
     "Assets": ["asm_view", "asm_create", "asm_edit", "asm_delete"],
     "Monitoring": ["mon_view", "mon_manage"],
-    "HR": ["hr_view", "hr_view_all", "hr_manage"],
+    "HR": ["hr_request", "hr_view", "hr_view_all", "hr_manage"],
 }
 PERMISSION_LABELS = {
     "view_dashboard": "Dashboard", "reports_view": "Reports", "admin_access": "Admin access",
@@ -68,8 +74,8 @@ PERMISSION_LABELS = {
     "itsm_assign": "Assign", "itsm_close": "Resolve/Close",
     "asm_view": "View assets", "asm_create": "Create assets", "asm_edit": "Edit assets",
     "asm_delete": "Delete assets", "mon_view": "View monitoring", "mon_manage": "Manage monitoring",
-    "hr_view": "View own HR record", "hr_view_all": "HR directory (all staff)",
-    "hr_manage": "Manage HR (edit + payroll)",
+    "hr_request": "Raise HR requests", "hr_view": "View own HR record",
+    "hr_view_all": "HR directory (all staff)", "hr_manage": "Manage HR (edit + payroll)",
 }
 # Module -> permissions that mean "full control" vs "view only" (responsibility matrix)
 MODULE_PERMS = {

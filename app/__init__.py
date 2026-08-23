@@ -28,7 +28,7 @@ NAV_SYSTEMS = [
     ("itsm", "itsm.index", "01", "itsm_view"),
     ("asm", "asm.index", "02", "asm_view"),
     ("monitoring", "monitoring.index", "03", "mon_view"),
-    ("hr", "hr.index", "04", "hr_view_all"),
+    ("hr", "hr.cases", "04", "hr_request"),
 ]
 NAV_PLATFORM = [
     ("dashboard", "main.dashboard", "◆", "view_dashboard"),

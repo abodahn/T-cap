@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}{{ c['ref'] }}{% endblock %}
+{% set st_kind = {'Submitted':'info','In Review':'warning','More Info':'warning','Approved':'success','Completed':'success','Rejected':'danger','Cancelled':''} %}
+{% set ev_icon = {'system':'◔','assign':'◎','status':'⇄','comment':'❝'} %}
+{% macro act(name) %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ name }}">{% endmacro %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · <span class="tc-mono">{{ c['ref'] }}</span></span>
+    <h1 class="tc-issue__title">{{ c['subject'] }}</h1>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.cases') }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-metabar">
+  {{ chip(c['status'], st_kind.get(c['status'],'')) }}
+  <span class="tc-pill">{{ t('hrmod_'+c['module']) }}</span>
+  {% if c['priority']=='High' %}{{ chip(c['priority'],'danger') }}{% else %}<span class="tc-pill">{{ c['priority'] }}</span>{% endif %}
+</div>
+
+<div class="tc-issue">
+  <div>
+    <div class="tc-desc">{{ c['description'] or '—' }}</div>
+
+    {% if c['decision'] %}
+    <div class="tc-section">{{ t('hr_decision') }} <span class="c">{{ c['decision'] }}</span></div>
+    {% if c['decision_reason'] %}<div class="tc-desc">{{ c['decision_reason'] }}</div>{% endif %}
+    {% endif %}
+
+    <div class="tc-section" id="activity">{{ t('activity') }} <span class="c">{{ events|length }}</span></div>
+    <div class="tc-thread">
+      {% for e in events %}{% set msg = e['kind']=='comment' %}
+      <div class="tc-tevent {{ 'tc-tevent--msg' if msg else 'tc-tevent--sys' }}">
+        <div class="tc-tevent__dot">{{ ev_icon.get(e['kind'],'•') }}</div>
+        <div>
+          <div class="tc-tevent__meta"><b>{{ e['actor'] }}</b> {% if not msg %}{{ e['summary'] }}{% endif %}<time>{{ e['created_at'][:16] }}</time></div>
+          {% if msg %}<div class="tc-tevent__body">{{ e['summary'] }}</div>
+          {% elif e['detail'] %}<div class="tc-faint" style="font-size:13px">{{ e['detail'] }}</div>{% endif %}
+        </div>
+      </div>
+      {% else %}<div class="tc-empty"><p>{{ t('no_records') }}</p></div>{% endfor %}
+    </div>
+
+    {% if can_act and open_ %}
+    <div class="tc-composer" style="margin-top:var(--space-4)">
+      <form method="post" action="{{ url_for('hr.case_action', ref=c['ref']) }}">
+        {{ act('comment') }}
+        <textarea name="comment" placeholder="{{ t('add_comment') }}…" required></textarea>
+        <div class="tc-composer__bar"><span></span><button class="tc-btn tc-btn--primary tc-btn--sm">{{ t('save') }}</button></div>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <dl class="tc-props">
+      <div class="tc-prop"><dt>{{ t('requester') }}</dt><dd class="tc-prop__v">{{ c['requester'] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('department') }}</dt><dd class="tc-prop__v">{{ c['department'] or '—' }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('hr_assignee') }}</dt><dd class="tc-prop__v">{{ c['assignee'] or '—' }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('priority') }}</dt><dd class="tc-prop__v">{{ c['priority'] }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('created') }}</dt><dd class="tc-prop__v tc-mono tc-faint">{{ c['created_at'][:16] }}</dd></div>
+    </dl>
+
+    {% if can_decide and nexts %}
+    <div class="tc-rail-actions">
+      <form method="post" action="{{ url_for('hr.case_action', ref=c['ref']) }}">{{ act('assign') }}
+        <input type="hidden" name="assignee" value="{{ user['full_name'] }}">
+        <button class="tc-btn tc-btn--block">◎ {{ t('hr_assign_me') }}</button></form>
+      <form method="post" action="{{ url_for('hr.case_action', ref=c['ref']) }}" style="margin-top:10px">{{ act('transition') }}
+        <div class="tc-field"><label class="tc-label">{{ t('hr_decision_reason') }} <span class="tc-faint">({{ t('optional') }})</span></label>
+          <textarea class="tc-textarea" name="reason" rows="2"></textarea></div>
+        <div class="tc-btnbar" style="flex-wrap:wrap">
+          {% for ns in nexts %}
+          <button class="tc-btn {{ 'tc-btn--primary' if ns in ['Approved','Completed'] }}" name="to_status" value="{{ ns }}">{{ ns }}</button>
+          {% endfor %}
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if is_owner and not can_decide and open_ and c['status'] != 'Approved' %}
+    <div class="tc-rail-actions">
+      <form method="post" action="{{ url_for('hr.case_action', ref=c['ref']) }}"
+            onsubmit="return confirm('{{ t('hr_confirm_cancel') }}')">{{ act('cancel') }}
+        <button class="tc-btn tc-btn--block">✕ {{ t('hr_cancel_request') }}</button></form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

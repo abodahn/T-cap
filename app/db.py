@@ -156,6 +156,17 @@ CREATE TABLE IF NOT EXISTS employees(
   bank_account TEXT, payable TEXT, advance_balance REAL, advance_installment REAL,
   notes TEXT, created_at TEXT, updated_at TEXT);
 
+CREATE TABLE IF NOT EXISTS hr_cases(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT UNIQUE, module TEXT,
+  subject TEXT, description TEXT, requester TEXT, created_by INTEGER,
+  department TEXT, status TEXT DEFAULT 'Submitted', priority TEXT DEFAULT 'Normal',
+  assignee TEXT, due_at TEXT, decision TEXT, decision_reason TEXT,
+  created_at TEXT, updated_at TEXT, closed_at TEXT);
+CREATE TABLE IF NOT EXISTS hr_case_events(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, actor TEXT, kind TEXT,
+  summary TEXT, detail TEXT, created_at TEXT,
+  FOREIGN KEY(case_id) REFERENCES hr_cases(id) ON DELETE CASCADE);
+
 CREATE TABLE IF NOT EXISTS assets(
   id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id TEXT UNIQUE, name TEXT,
   category TEXT, brand TEXT, model TEXT, serial TEXT, company TEXT, site TEXT,
@@ -234,6 +245,12 @@ def _backfill_perms(conn):
         for perm, roles in _PERM_BACKFILL.items():
             for r in roles:
                 conn.execute("INSERT OR IGNORE INTO role_perms(role,perm) VALUES(?,?)", (r, perm))
+        # hr_request: every seeded role (except super_admin, which has '*') can
+        # raise and track its own HR service requests.
+        roles = [r["role"] for r in conn.execute("SELECT DISTINCT role FROM role_perms").fetchall()]
+        for r in roles:
+            if r != "super_admin":
+                conn.execute("INSERT OR IGNORE INTO role_perms(role,perm) VALUES(?,?)", (r, "hr_request"))
         conn.commit()
     except Exception:
         if hasattr(conn, "rollback"):

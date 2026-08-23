@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_new_request') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span>
+    <h1 class="tc-h1">{{ t('hr_new_request') }}</h1>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.cases') }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-card" style="max-width:680px">
+  <div class="tc-card__body">
+    <form method="post">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="tc-field">
+        <label class="tc-label">{{ t('hr_type') }}</label>
+        <select class="tc-select" name="module" style="width:100%">
+          {% for key, label in modules %}<option value="{{ key }}">{{ t('hrmod_'+key) }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="tc-field">
+        <label class="tc-label">{{ t('subject') }}</label>
+        <input class="tc-input" name="subject" required maxlength="200" placeholder="{{ t('hr_subject_ph') }}" style="width:100%">
+      </div>
+      <div class="tc-field">
+        <label class="tc-label">{{ t('description') }} <span class="tc-faint">({{ t('optional') }})</span></label>
+        <textarea class="tc-textarea" name="description" rows="5" style="width:100%" placeholder="{{ t('hr_desc_ph') }}"></textarea>
+      </div>
+      <div class="tc-field">
+        <label class="tc-label">{{ t('priority') }}</label>
+        <select class="tc-select" name="priority">
+          {% for p in priorities %}<option value="{{ p }}" {{ 'selected' if p=='Normal' }}>{{ p }}</option>{% endfor %}
+        </select>
+      </div>
+      <button class="tc-btn tc-btn--primary tc-mt">＋ {{ t('hr_submit_request') }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
