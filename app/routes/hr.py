@@ -51,6 +51,8 @@ HEADER_MAP = {
     "mob": "phone", "mobile": "phone", "phone": "phone", "tel": "phone",
     "الهاتف": "phone", "الموبايل": "phone", "الجوال": "phone",
     "الموقع": "location", "location": "location", "address": "location", "العنوان": "location",
+    "المدير": "manager_ref", "المدير المباشر": "manager_ref", "manager": "manager_ref",
+    "reports to": "manager_ref", "line manager": "manager_ref", "manager_name": "manager_ref",
     "المرتب الأساسي": "basic_salary", "basic_salary": "basic_salary", "basic": "basic_salary",
     "الأجر التأميني": "insurance_wage", "insurance_wage": "insurance_wage",
     "كود البنك": "bank_code", "bank_code": "bank_code",
@@ -117,6 +119,7 @@ def import_workbook(db, ws):
 
     ins = upd = skip = 0
     now = utcnow()
+    mgr_refs = []   # (key_value, manager_ref) resolved after all rows exist
     for row in data_rows:
         data = {}
         for i, field in idx.items():
@@ -124,6 +127,7 @@ def import_workbook(db, ws):
             val = _num(val) if field in _NUMERIC else _cell(val)
             if val is not None and data.get(field) in (None, ""):   # first non-empty wins
                 data[field] = val
+        mref = data.pop("manager_ref", None)   # not a real column — resolved below
         key = data.get(key_field)
         if not key:
             skip += 1
@@ -142,6 +146,19 @@ def import_workbook(db, ws):
             db.execute(f"INSERT INTO employees({','.join(allcols)}) VALUES({ph})",
                        [key] + [data[c] for c in cols] + [now, now])
             ins += 1
+        if mref:
+            mgr_refs.append((key, mref))
+
+    # Second pass: resolve each manager name/code to an employee id (managers may
+    # be other rows in the same sheet, hence the two passes). Self-links skipped.
+    for key, mref in mgr_refs:
+        m = db.execute("SELECT id FROM employees WHERE employee_no=? OR LOWER(name_en)=LOWER(?) OR name_ar=?",
+                       (mref, mref, mref)).fetchone()
+        if not m:
+            continue
+        self_row = db.execute(f"SELECT id FROM employees WHERE {key_field}=?", (key,)).fetchone()
+        if self_row and m["id"] != self_row["id"]:
+            db.execute("UPDATE employees SET manager_id=? WHERE id=?", (m["id"], self_row["id"]))
     return ins, upd, skip
 
 
