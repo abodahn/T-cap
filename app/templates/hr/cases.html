@@ -3,6 +3,7 @@
 {% block title %}{{ t('hr_requests') }}{% endblock %}
 {% set st_kind = {'Submitted':'info','In Review':'warning','More Info':'warning','Approved':'success','Completed':'success','Rejected':'danger','Cancelled':''} %}
 {% set pr_kind = {'High':'danger','Normal':'','Low':''} %}
+{% set active = 'cases' %}
 {% block content %}
 <div class="tc-head">
   <div class="tc-head__l">
@@ -10,11 +11,10 @@
     <h1 class="tc-h1">{{ t('hr_requests') if staff else t('hr_my_requests') }}</h1>
   </div>
   <div class="tc-btnbar">
-    {% if staff %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.index') }}">{{ t('hr_directory') }}</a>{% endif %}
-    {% if user_can('hr_manage') %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.payroll') }}">🔒 {{ t('hr_payroll_runs') }}</a>{% endif %}
     <a class="tc-btn tc-btn--primary" href="{{ url_for('hr.case_new') }}">＋ {{ t('hr_new_request') }}</a>
   </div>
 </div>
+{% include 'hr/_subnav.html' %}
 
 <div class="tc-toolbar">
   <div class="tc-seg">

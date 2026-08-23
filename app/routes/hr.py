@@ -504,3 +504,161 @@ def payroll_import():
             flash("hr_import_error")
         return redirect(url_for("hr.payroll_import"))
     return render_template("hr/payroll_import.html")
+
+
+# ===========================================================================
+#  Announcements — HR broadcasts, read by all staff, posted by hr_manage.
+# ===========================================================================
+@bp.route("/announcements")
+@login_required
+def announcements():
+    db = get_db()
+    rows = db.execute("SELECT * FROM hr_announcements ORDER BY pinned DESC, created_at DESC").fetchall()
+    return render_template("hr/announcements.html", items=rows, can_manage=user_can("hr_manage"))
+
+
+@bp.route("/announcements/new", methods=["POST"])
+@permission_required("hr_manage")
+def announcement_new():
+    db = get_db()
+    title = (request.form.get("title") or "").strip()
+    body = (request.form.get("body") or "").strip()
+    if title and body:
+        db.execute("INSERT INTO hr_announcements(title,body,author,pinned,created_at) VALUES(?,?,?,?,?)",
+                   (title, body, current_user()["full_name"], 1 if request.form.get("pinned") else 0, utcnow()))
+        db.commit()
+        log_audit(current_user()["username"], "hr_announce", title[:60])
+    return redirect(url_for("hr.announcements"))
+
+
+@bp.route("/announcements/<int:aid>/delete", methods=["POST"])
+@permission_required("hr_manage")
+def announcement_delete(aid):
+    db = get_db()
+    db.execute("DELETE FROM hr_announcements WHERE id=?", (aid,))
+    db.commit()
+    return redirect(url_for("hr.announcements"))
+
+
+# ===========================================================================
+#  Policies & acknowledgements — staff read + acknowledge; HR tracks compliance.
+# ===========================================================================
+@bp.route("/policies")
+@login_required
+def policies():
+    db = get_db()
+    uid = current_user()["id"]
+    rows = db.execute("SELECT * FROM hr_policies WHERE active=1 ORDER BY created_at DESC").fetchall()
+    acked = {r[0] for r in db.execute("SELECT policy_id FROM hr_policy_acks WHERE user_id=?", (uid,)).fetchall()}
+    total_users = db.execute("SELECT COUNT(*) FROM users WHERE is_active=1").fetchone()[0]
+    counts = {r["policy_id"]: r["c"] for r in db.execute("SELECT policy_id, COUNT(*) AS c FROM hr_policy_acks GROUP BY policy_id").fetchall()}
+    return render_template("hr/policies.html", items=rows, acked=acked, counts=counts,
+                           total_users=total_users, can_manage=user_can("hr_manage"))
+
+
+@bp.route("/policies/new", methods=["POST"])
+@permission_required("hr_manage")
+def policy_new():
+    db = get_db()
+    title = (request.form.get("title") or "").strip()
+    body = (request.form.get("body") or "").strip()
+    if title and body:
+        db.execute("INSERT INTO hr_policies(title,body,version,active,author,created_at) VALUES(?,?,?,1,?,?)",
+                   (title, body, (request.form.get("version") or "1.0").strip(),
+                    current_user()["full_name"], utcnow()))
+        db.commit()
+        log_audit(current_user()["username"], "hr_policy_new", title[:60])
+    return redirect(url_for("hr.policies"))
+
+
+@bp.route("/policies/<int:pid>/ack", methods=["POST"])
+@login_required
+def policy_ack(pid):
+    db = get_db()
+    u = current_user()
+    if db.execute("SELECT 1 FROM hr_policies WHERE id=? AND active=1", (pid,)).fetchone():
+        db.execute("INSERT OR IGNORE INTO hr_policy_acks(policy_id,user_id,user_name,acknowledged_at) VALUES(?,?,?,?)",
+                   (pid, u["id"], u["full_name"], utcnow()))
+        db.commit()
+    return redirect(url_for("hr.policies"))
+
+
+@bp.route("/policies/<int:pid>")
+@permission_required("hr_view_all")
+def policy_detail(pid):
+    db = get_db()
+    pol = db.execute("SELECT * FROM hr_policies WHERE id=?", (pid,)).fetchone()
+    if not pol:
+        abort(404)
+    acks = db.execute("SELECT * FROM hr_policy_acks WHERE policy_id=? ORDER BY acknowledged_at DESC", (pid,)).fetchall()
+    total_users = db.execute("SELECT COUNT(*) FROM users WHERE is_active=1").fetchone()[0]
+    return render_template("hr/policy_detail.html", pol=pol, acks=acks, total_users=total_users)
+
+
+# ===========================================================================
+#  Appraisals — performance reviews per employee (HR-managed).
+# ===========================================================================
+APPRAISAL_STATUSES = ["Draft", "Shared", "Acknowledged"]
+
+
+@bp.route("/appraisals")
+@permission_required("hr_view_all")
+def appraisals():
+    db = get_db()
+    q = (request.args.get("q") or "").strip()
+    where, p = "1=1", []
+    if q:
+        where += " AND (employee_name LIKE ? OR employee_no LIKE ? OR period LIKE ?)"; p += [f"%{q}%"] * 3
+    rows = db.execute("SELECT * FROM hr_appraisals WHERE " + where + " ORDER BY created_at DESC", p).fetchall()
+    return render_template("hr/appraisals.html", items=rows, q=q, can_manage=user_can("hr_manage"))
+
+
+@bp.route("/appraisals/new", methods=["GET", "POST"])
+@permission_required("hr_manage")
+def appraisal_new():
+    db = get_db()
+    if request.method == "POST":
+        name = (request.form.get("employee_name") or "").strip()
+        if not name:
+            flash("hr_appraisal_name_required")
+            return redirect(url_for("hr.appraisal_new"))
+        try:
+            rating = min(5, max(1, int(request.form.get("rating") or 3)))
+        except ValueError:
+            rating = 3
+        db.execute("""INSERT INTO hr_appraisals(employee_no,employee_name,period,reviewer,rating,
+                      strengths,improvements,goals,status,created_at,updated_at)
+                      VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                   (request.form.get("employee_no") or "", name,
+                    (request.form.get("period") or "").strip(), current_user()["full_name"], rating,
+                    (request.form.get("strengths") or "").strip(),
+                    (request.form.get("improvements") or "").strip(),
+                    (request.form.get("goals") or "").strip(), "Draft", utcnow(), utcnow()))
+        aid = db.execute("SELECT MAX(id) AS m FROM hr_appraisals").fetchone()["m"]
+        db.commit()
+        log_audit(current_user()["username"], "hr_appraisal_new", name)
+        return redirect(url_for("hr.appraisal_detail", aid=aid))
+    emps = db.execute("SELECT employee_no,name_en FROM employees ORDER BY name_en").fetchall()
+    return render_template("hr/appraisal_form.html", emps=emps, statuses=APPRAISAL_STATUSES)
+
+
+@bp.route("/appraisals/<int:aid>")
+@permission_required("hr_view_all")
+def appraisal_detail(aid):
+    db = get_db()
+    a = db.execute("SELECT * FROM hr_appraisals WHERE id=?", (aid,)).fetchone()
+    if not a:
+        abort(404)
+    return render_template("hr/appraisal_detail.html", a=a, statuses=APPRAISAL_STATUSES,
+                           can_manage=user_can("hr_manage"))
+
+
+@bp.route("/appraisals/<int:aid>/status", methods=["POST"])
+@permission_required("hr_manage")
+def appraisal_status(aid):
+    db = get_db()
+    st = request.form.get("status")
+    if st in APPRAISAL_STATUSES:
+        db.execute("UPDATE hr_appraisals SET status=?, updated_at=? WHERE id=?", (st, utcnow(), aid))
+        db.commit()
+    return redirect(url_for("hr.appraisal_detail", aid=aid))

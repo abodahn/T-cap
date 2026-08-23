@@ -173,6 +173,20 @@ CREATE TABLE IF NOT EXISTS payroll_runs(
   ot_hours REAL, ot_rate REAL, gross REAL, deductions REAL, absence_ded REAL,
   tax_ded REAL, net REAL, status TEXT DEFAULT 'Draft', created_at TEXT, updated_at TEXT);
 
+CREATE TABLE IF NOT EXISTS hr_announcements(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, body TEXT, author TEXT,
+  pinned INTEGER DEFAULT 0, created_at TEXT);
+CREATE TABLE IF NOT EXISTS hr_policies(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, body TEXT, version TEXT,
+  active INTEGER DEFAULT 1, author TEXT, created_at TEXT);
+CREATE TABLE IF NOT EXISTS hr_policy_acks(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, policy_id INTEGER, user_id INTEGER,
+  user_name TEXT, acknowledged_at TEXT, UNIQUE(policy_id, user_id));
+CREATE TABLE IF NOT EXISTS hr_appraisals(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, employee_no TEXT, employee_name TEXT,
+  period TEXT, reviewer TEXT, rating INTEGER, strengths TEXT, improvements TEXT,
+  goals TEXT, status TEXT DEFAULT 'Draft', created_at TEXT, updated_at TEXT);
+
 CREATE TABLE IF NOT EXISTS assets(
   id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id TEXT UNIQUE, name TEXT,
   category TEXT, brand TEXT, model TEXT, serial TEXT, company TEXT, site TEXT,

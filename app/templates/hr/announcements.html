@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_announcements') }}{% endblock %}
+{% set active = 'announcements' %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span><h1 class="tc-h1">{{ t('hr_announcements') }}</h1></div>
+</div>
+{% include 'hr/_subnav.html' %}
+
+{% if can_manage %}
+<div class="tc-card" style="margin-bottom:20px"><div class="tc-card__body">
+  <form method="post" action="{{ url_for('hr.announcement_new') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="tc-field"><input class="tc-input" name="title" required maxlength="160" placeholder="{{ t('hr_ann_title_ph') }}" style="width:100%"></div>
+    <div class="tc-field"><textarea class="tc-textarea" name="body" rows="3" required placeholder="{{ t('hr_ann_body_ph') }}" style="width:100%"></textarea></div>
+    <label class="tc-faint" style="font-size:13px"><input type="checkbox" name="pinned"> {{ t('hr_pin') }}</label>
+    <button class="tc-btn tc-btn--primary" style="float:inline-end">＋ {{ t('hr_post') }}</button>
+  </form>
+</div></div>
+{% endif %}
+
+{% for a in items %}
+<div class="tc-card" style="margin-bottom:12px"><div class="tc-card__body">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+    <h3 style="margin:0">{% if a['pinned'] %}📌 {% endif %}{{ a['title'] }}</h3>
+    {% if can_manage %}<form method="post" action="{{ url_for('hr.announcement_delete', aid=a['id']) }}" onsubmit="return confirm('{{ t('hr_delete_confirm') }}')">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <button class="tc-btn tc-btn--sm tc-btn--ghost" style="color:var(--status-danger)">{{ t('delete') }}</button></form>{% endif %}
+  </div>
+  <p style="white-space:pre-wrap;margin:8px 0 0">{{ a['body'] }}</p>
+  <div class="tc-faint" style="font-size:12px;margin-top:10px">{{ a['author'] }} · {{ a['created_at'][:16] }}</div>
+</div></div>
+{% else %}
+<div class="tc-empty" style="padding:40px"><p>{{ t('hr_no_announcements') }}</p></div>
+{% endfor %}
+{% endblock %}

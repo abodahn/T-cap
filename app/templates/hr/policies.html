@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}{{ t('hr_policies') }}{% endblock %}
+{% set active = 'policies' %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span><h1 class="tc-h1">{{ t('hr_policies') }}</h1></div>
+</div>
+{% include 'hr/_subnav.html' %}
+
+{% if can_manage %}
+<details class="tc-card" style="margin-bottom:20px"><summary class="tc-card__body" style="cursor:pointer;font-weight:700">＋ {{ t('hr_policy_new') }}</summary>
+  <div class="tc-card__body" style="border-top:var(--line)">
+  <form method="post" action="{{ url_for('hr.policy_new') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="tc-field"><label class="tc-label">{{ t('hr_policy_title') }}</label><input class="tc-input" name="title" required style="width:100%"></div>
+    <div class="tc-field" style="max-width:160px"><label class="tc-label">{{ t('hr_version') }}</label><input class="tc-input" name="version" value="1.0"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_policy_body') }}</label><textarea class="tc-textarea" name="body" rows="5" required style="width:100%"></textarea></div>
+    <button class="tc-btn tc-btn--primary">＋ {{ t('hr_publish') }}</button>
+  </form>
+  </div>
+</details>
+{% endif %}
+
+{% for pl in items %}
+<div class="tc-card" style="margin-bottom:12px"><div class="tc-card__body">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+    <div>
+      <h3 style="margin:0">{{ pl['title'] }} <span class="tc-faint" style="font-size:13px">v{{ pl['version'] }}</span></h3>
+      <div class="tc-faint" style="font-size:12px;margin-top:4px">{{ pl['author'] }} · {{ pl['created_at'][:10] }}</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      {% if pl['id'] in acked %}{{ chip(t('hr_acknowledged'),'success') }}
+      {% else %}
+      <form method="post" action="{{ url_for('hr.policy_ack', pid=pl['id']) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-btn tc-btn--primary tc-btn--sm">✓ {{ t('hr_acknowledge') }}</button></form>
+      {% endif %}
+      {% if can_manage %}<a class="tc-btn tc-btn--ghost tc-btn--sm" href="{{ url_for('hr.policy_detail', pid=pl['id']) }}">{{ counts.get(pl['id'],0) }}/{{ total_users }} ✓</a>{% endif %}
+    </div>
+  </div>
+  <p style="white-space:pre-wrap;margin:10px 0 0">{{ pl['body'] }}</p>
+</div></div>
+{% else %}
+<div class="tc-empty" style="padding:40px"><p>{{ t('hr_no_policies') }}</p></div>
+{% endfor %}
+{% endblock %}

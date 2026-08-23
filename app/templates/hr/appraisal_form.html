@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_appraisal_new') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span><h1 class="tc-h1">{{ t('hr_appraisal_new') }}</h1></div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.appraisals') }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-card" style="max-width:720px"><div class="tc-card__body">
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="tc-field"><label class="tc-label">{{ t('hr_employee') }}</label>
+      <input class="tc-input" name="employee_name" list="emplist" required style="width:100%" placeholder="{{ t('hr_name') }}">
+      <datalist id="emplist">{% for e in emps %}<option value="{{ e['name_en'] }}">{% endfor %}</datalist>
+    </div>
+    <div class="tc-field" style="max-width:220px"><label class="tc-label">{{ t('hr_period') }}</label><input class="tc-input" name="period" placeholder="2026-H1"></div>
+    <div class="tc-field" style="max-width:220px"><label class="tc-label">{{ t('hr_rating') }} (1–5)</label>
+      <select class="tc-select" name="rating">{% for n in [5,4,3,2,1] %}<option value="{{ n }}" {{ 'selected' if n==3 }}>{{ '★'*n }} ({{ n }})</option>{% endfor %}</select></div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_strengths') }}</label><textarea class="tc-textarea" name="strengths" rows="3" style="width:100%"></textarea></div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_improvements') }}</label><textarea class="tc-textarea" name="improvements" rows="3" style="width:100%"></textarea></div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_goals') }}</label><textarea class="tc-textarea" name="goals" rows="3" style="width:100%"></textarea></div>
+    <button class="tc-btn tc-btn--primary">{{ t('save') }}</button>
+  </form>
+</div></div>
+{% endblock %}

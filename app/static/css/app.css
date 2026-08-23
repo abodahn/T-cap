@@ -187,6 +187,14 @@
 .tc-total-row td { border-top: var(--line-strong); background: var(--surface-2);
   font-weight: 700; }
 
+/* HR sub-navigation strip */
+.tc-subnav { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px;
+  border-bottom: var(--line); padding-bottom: 0; }
+.tc-subnav a { padding: 8px 14px; font-size: 13.5px; font-weight: 600;
+  color: var(--text-faint); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tc-subnav a:hover { color: var(--text); }
+.tc-subnav a.on { color: var(--text); border-bottom-color: var(--text); }
+
 /* cards + table rows: subtle interaction */
 .tc-card { transition: border-color var(--transition); }
 .tc-table tbody tr { transition: background var(--transition); }

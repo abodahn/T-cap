@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ pol['title'] }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · {{ t('hr_policies') }}</span>
+    <h1 class="tc-issue__title">{{ pol['title'] }} <span class="tc-faint" style="font-size:15px">v{{ pol['version'] }}</span></h1>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.policies') }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-issue">
+  <div><div class="tc-desc" style="white-space:pre-wrap">{{ pol['body'] }}</div></div>
+  <div>
+    <div class="tc-section">{{ t('hr_compliance') }} <span class="c">{{ acks|length }}/{{ total_users }}</span></div>
+    <div class="tc-thread">
+      {% for k in acks %}
+      <div class="tc-tevent tc-tevent--sys"><div class="tc-tevent__dot">✓</div>
+        <div><div class="tc-tevent__meta"><b>{{ k['user_name'] }}</b><time>{{ k['acknowledged_at'][:16] }}</time></div></div>
+      </div>
+      {% else %}<div class="tc-empty"><p>{{ t('hr_no_acks') }}</p></div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

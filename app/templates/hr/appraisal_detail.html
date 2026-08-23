@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}{{ t('hr_appraisal') }} · {{ a['employee_name'] }}{% endblock %}
+{% set st_kind = {'Draft':'','Shared':'info','Acknowledged':'success'} %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · {{ t('hr_appraisal') }}{% if a['period'] %} · {{ a['period'] }}{% endif %}</span>
+    <h1 class="tc-issue__title">{{ a['employee_name'] }}</h1>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.appraisals') }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-metabar">
+  {{ chip(a['status'], st_kind.get(a['status'],'')) }}
+  <span class="tc-pill" style="font-size:15px">{{ '★' * (a['rating'] or 0) }}{{ '☆' * (5-(a['rating'] or 0)) }}</span>
+  <span class="tc-faint">{{ t('hr_reviewer') }}: {{ a['reviewer'] }}</span>
+</div>
+
+<div class="tc-issue">
+  <div>
+    <div class="tc-section">{{ t('hr_strengths') }}</div><div class="tc-desc">{{ a['strengths'] or '—' }}</div>
+    <div class="tc-section">{{ t('hr_improvements') }}</div><div class="tc-desc">{{ a['improvements'] or '—' }}</div>
+    <div class="tc-section">{{ t('hr_goals') }}</div><div class="tc-desc">{{ a['goals'] or '—' }}</div>
+  </div>
+  <div>
+    {% if can_manage %}
+    <div class="tc-rail-actions">
+      <form method="post" action="{{ url_for('hr.appraisal_status', aid=a['id']) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="tc-field"><label class="tc-label">{{ t('status') }}</label>
+          <select class="tc-select" name="status" onchange="this.form.submit()" style="width:100%">
+            {% for s in statuses %}<option {{ 'selected' if s==a['status'] }}>{{ s }}</option>{% endfor %}
+          </select></div>
+      </form>
+    </div>
+    {% endif %}
+    <dl class="tc-props">
+      <div class="tc-prop"><dt>{{ t('hr_period') }}</dt><dd class="tc-prop__v">{{ a['period'] or '—' }}</dd></div>
+      <div class="tc-prop"><dt>{{ t('created') }}</dt><dd class="tc-prop__v tc-mono tc-faint">{{ a['created_at'][:16] }}</dd></div>
+    </dl>
+  </div>
+</div>
+{% endblock %}
