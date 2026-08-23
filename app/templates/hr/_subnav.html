@@ -8,6 +8,7 @@
   <a class="{{ 'on' if active=='policies' }}" href="{{ url_for('hr.policies') }}">{{ t('hr_policies') }}</a>
   {% if user_can('hr_view_all') %}
   <a class="{{ 'on' if active=='directory' }}" href="{{ url_for('hr.index') }}">{{ t('hr_directory') }}</a>
+  <a class="{{ 'on' if active=='org' }}" href="{{ url_for('hr.org') }}">{{ t('hr_org') }}</a>
   <a class="{{ 'on' if active=='appraisals' }}" href="{{ url_for('hr.appraisals') }}">{{ t('hr_appraisals') }}</a>
   {% endif %}
   {% if user_can('hr_manage') %}

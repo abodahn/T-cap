@@ -200,6 +200,10 @@ CREATE TABLE IF NOT EXISTS attendance(
   date TEXT, check_in TEXT, check_out TEXT, hours REAL, status TEXT DEFAULT 'Present',
   notes TEXT, created_by INTEGER, created_at TEXT, updated_at TEXT,
   UNIQUE(employee_id, date));
+CREATE TABLE IF NOT EXISTS employee_docs(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, employee_id INTEGER, name TEXT,
+  filename TEXT, mimetype TEXT, size INTEGER, data TEXT, uploaded_by TEXT,
+  created_at TEXT);
 
 CREATE TABLE IF NOT EXISTS assets(
   id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id TEXT UNIQUE, name TEXT,

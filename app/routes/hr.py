@@ -211,7 +211,8 @@ def view(eid):
     if not e:
         abort(404)
     mgr = db.execute("SELECT name_en,employee_no FROM employees WHERE id=?", (e["manager_id"],)).fetchone() if e["manager_id"] else None
-    return render_template("hr/detail.html", e=e, mgr=mgr,
+    docs = db.execute("SELECT id,name,filename,size,uploaded_by,created_at FROM employee_docs WHERE employee_id=? ORDER BY created_at DESC", (eid,)).fetchall()
+    return render_template("hr/detail.html", e=e, mgr=mgr, docs=docs,
                            can_manage=user_can("hr_manage"), confidential=CONFIDENTIAL)
 
 
@@ -1068,3 +1069,78 @@ def attendance_manual():
         return redirect(url_for("hr.attendance", date=day))
     emps = db.execute("SELECT id,name_en FROM employees ORDER BY name_en").fetchall()
     return render_template("hr/attendance_manual.html", emps=emps, statuses=ATTEND_STATUSES, today=utcnow()[:10])
+
+
+# ===========================================================================
+#  Org chart / departments
+# ===========================================================================
+@bp.route("/org")
+@permission_required("hr_view_all")
+def org():
+    db = get_db()
+    emps = db.execute("SELECT id,name_en,name_ar,job_title,department,manager_id FROM employees ORDER BY name_en").fetchall()
+    ids = {e["id"] for e in emps}
+    # department groups
+    members = {}
+    for e in emps:
+        members.setdefault(e["department"] or "—", []).append(e)
+    depts = sorted(members.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    # reporting tree: children keyed by manager_id; roots have no valid manager
+    children = {}
+    for e in emps:
+        children.setdefault(e["manager_id"], []).append(e)
+    roots = [e for e in emps if not e["manager_id"] or e["manager_id"] not in ids]
+    return render_template("hr/org.html", depts=depts, children=children, roots=roots, total=len(emps))
+
+
+# ===========================================================================
+#  Employee documents — stored in the DB (base64) so they survive on the
+#  ephemeral filesystem. hr_view_all lists/downloads; hr_manage uploads/deletes.
+# ===========================================================================
+@bp.route("/employee/<int:eid>/docs/upload", methods=["POST"])
+@permission_required("hr_manage")
+def doc_upload(eid):
+    import base64
+    db = get_db()
+    if not db.execute("SELECT 1 FROM employees WHERE id=?", (eid,)).fetchone():
+        abort(404)
+    f = request.files.get("file")
+    if f and f.filename:
+        raw = f.read()
+        db.execute("""INSERT INTO employee_docs(employee_id,name,filename,mimetype,size,data,uploaded_by,created_at)
+                      VALUES(?,?,?,?,?,?,?,?)""",
+                   (eid, (request.form.get("name") or f.filename).strip(), f.filename,
+                    f.mimetype or "application/octet-stream", len(raw),
+                    base64.b64encode(raw).decode("ascii"), current_user()["full_name"], utcnow()))
+        db.commit()
+        log_audit(current_user()["username"], "hr_doc_upload", f.filename)
+    else:
+        flash("hr_doc_no_file")
+    return redirect(url_for("hr.view", eid=eid))
+
+
+@bp.route("/doc/<int:did>")
+@permission_required("hr_view_all")
+def doc_download(did):
+    import base64
+    from flask import Response
+    db = get_db()
+    d = db.execute("SELECT * FROM employee_docs WHERE id=?", (did,)).fetchone()
+    if not d:
+        abort(404)
+    raw = base64.b64decode(d["data"] or "")
+    return Response(raw, mimetype=d["mimetype"] or "application/octet-stream",
+                    headers={"Content-Disposition": f'inline; filename="{d["filename"]}"'})
+
+
+@bp.route("/doc/<int:did>/delete", methods=["POST"])
+@permission_required("hr_manage")
+def doc_delete(did):
+    db = get_db()
+    d = db.execute("SELECT employee_id FROM employee_docs WHERE id=?", (did,)).fetchone()
+    if not d:
+        abort(404)
+    db.execute("DELETE FROM employee_docs WHERE id=?", (did,))
+    db.commit()
+    log_audit(current_user()["username"], "hr_doc_delete", str(did))
+    return redirect(url_for("hr.view", eid=d["employee_id"]))

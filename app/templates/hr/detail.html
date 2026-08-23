@@ -65,4 +65,26 @@
     {% endif %}
   </div>
 </div>
+
+<div class="tc-card" style="margin-top:20px"><div class="tc-card__body">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <h3 style="margin:0">📎 {{ t('hr_documents') }} <span class="tc-faint" style="font-size:14px">{{ docs|length }}</span></h3>
+    {% if can_manage %}
+    <form method="post" action="{{ url_for('hr.doc_upload', eid=e['id']) }}" enctype="multipart/form-data" class="tc-toolbar" style="margin:0;gap:8px">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input class="tc-input" name="name" placeholder="{{ t('hr_doc_name') }}" style="width:160px">
+      <input class="tc-input" type="file" name="file" required>
+      <button class="tc-btn tc-btn--primary tc-btn--sm">⭱ {{ t('hr_upload') }}</button>
+    </form>{% endif %}
+  </div>
+  <div class="tc-table-wrap" style="border:0;margin-top:12px"><table class="tc-table"><tbody>
+    {% for dc in docs %}
+    <tr>
+      <td>📄 <a class="tc-idlink" href="{{ url_for('hr.doc_download', did=dc['id']) }}" target="_blank">{{ dc['name'] }}</a>
+        <div class="tc-faint" style="font-size:12px">{{ dc['filename'] }} · {{ (dc['size']/1024)|round|int }} KB · {{ dc['uploaded_by'] }} · {{ dc['created_at'][:10] }}</div></td>
+      {% if can_manage %}<td style="text-align:end"><form method="post" action="{{ url_for('hr.doc_delete', did=dc['id']) }}" onsubmit="return confirm('{{ t('hr_delete_confirm') }}')"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tc-btn tc-btn--sm tc-btn--ghost" style="color:var(--status-danger)">{{ t('delete') }}</button></form></td>{% endif %}
+    </tr>
+    {% else %}<tr><td class="tc-faint" style="padding:16px">{{ t('hr_no_docs') }}</td></tr>{% endfor %}
+  </tbody></table></div>
+</div></div>
 {% endblock %}

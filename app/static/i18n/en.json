@@ -450,5 +450,16 @@
   "hr_date": "Date",
   "hr_no_attendance": "No attendance records.",
   "hr_att_invalid": "Please choose an employee and date.",
-  "hr_card_attendance": "Check in/out and track working hours."
+  "hr_card_attendance": "Check in/out and track working hours.",
+  "hr_org": "Org chart",
+  "hr_by_department": "By department",
+  "hr_reporting_lines": "Reporting lines",
+  "hr_more": "more",
+  "hr_org_hint": "Reporting lines are drawn from each employee's manager. Set a manager on an employee to build the tree.",
+  "hr_card_org": "Departments and reporting lines.",
+  "hr_documents": "Documents",
+  "hr_doc_name": "Label (optional)",
+  "hr_upload": "Upload",
+  "hr_no_docs": "No documents yet.",
+  "hr_doc_no_file": "Please choose a file to upload."
 }

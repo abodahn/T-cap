@@ -46,6 +46,7 @@
   {{ modcard('📋', t('hr_policies'), t('hr_card_policies'), 'hr.policies', badge=k.policies) }}
   {% if staff %}
   {{ modcard('👥', t('hr_directory'), t('hr_card_directory'), 'hr.index', badge=k.headcount) }}
+  {{ modcard('🏢', t('hr_org'), t('hr_card_org'), 'hr.org') }}
   {{ modcard('⭐', t('hr_appraisals'), t('hr_card_appraisals'), 'hr.appraisals', badge=k.appraisals) }}
   {% endif %}
   {% if can_manage %}
