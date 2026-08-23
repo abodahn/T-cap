@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{% from "_macros.html" import chip %}
-{% block title %}{{ t('mod_hr') }}{% endblock %}
+{% from "_macros.html" import chip, avatar %}
+{% block title %}{{ t('hr_directory') }}{% endblock %}
+{% set active = 'directory' %}
 {% block content %}
 <div class="tc-head">
   <div class="tc-head__l">
@@ -11,6 +12,7 @@
     {% if can_manage %}<a class="tc-btn tc-btn--primary" href="{{ url_for('hr.import_data') }}">⭱ {{ t('hr_import') }}</a>{% endif %}
   </div>
 </div>
+{% include 'hr/_subnav.html' %}
 
 <div class="tc-toolbar">
   <form method="get" class="tc-toolbar" style="margin:0;gap:8px;flex-wrap:wrap">
@@ -30,15 +32,23 @@
 <div class="tc-table-wrap">
   <table class="tc-table">
     <thead><tr>
-      <th>{{ t('hr_code') }}</th><th>{{ t('hr_name') }}</th>
+      <th>{{ t('hr_name') }}</th><th>{{ t('hr_job_title') }}</th>
       <th>{{ t('department') }}</th><th>{{ t('hr_section') }}</th><th>{{ t('status') }}</th>
     </tr></thead>
     <tbody>
       {% for e in employees %}
       <tr onclick="location='{{ url_for('hr.view', employee_no=e['employee_no']) }}'">
-        <td><a class="tc-idlink tc-mono" href="{{ url_for('hr.view', employee_no=e['employee_no']) }}" onclick="event.stopPropagation()">{{ e['employee_no'] }}</a></td>
-        <td>{{ e['name_en'] or e['name_ar'] or '—' }}{% if e['name_ar'] and e['name_en'] %}<div class="tc-faint" style="font-size:12px;margin-top:2px" dir="rtl">{{ e['name_ar'] }}</div>{% endif %}</td>
-        <td class="tc-faint">{{ e['department'] or '—' }}</td>
+        <td>
+          <a class="tc-cellflex" href="{{ url_for('hr.view', employee_no=e['employee_no']) }}" onclick="event.stopPropagation()" style="color:inherit">
+            {{ avatar(e['name_en'] or e['name_ar']) }}
+            <span class="tc-cellflex__t">
+              <span style="font-weight:600;display:block">{{ e['name_en'] or e['name_ar'] or '—' }}</span>
+              <span class="tc-faint tc-mono" style="font-size:12px">{{ e['employee_no'] }}{% if e['name_ar'] and e['name_en'] %} · <span dir="rtl">{{ e['name_ar'] }}</span>{% endif %}</span>
+            </span>
+          </a>
+        </td>
+        <td class="tc-faint">{{ e['job_title'] or '—' }}</td>
+        <td>{% if e['department'] %}{{ chip(e['department']) }}{% else %}<span class="tc-faint">—</span>{% endif %}</td>
         <td class="tc-faint">{{ e['section'] or '—' }}</td>
         <td>{{ chip(e['status'] or 'active', 'success' if (e['status'] or 'active')=='active' else '') }}</td>
       </tr>

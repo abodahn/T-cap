@@ -2,6 +2,7 @@
 {% from "_macros.html" import chip %}
 {% block title %}{{ t('hr_payroll_runs') }}{% endblock %}
 {% set st_kind = {'Draft':'','Approved':'info','Paid':'success'} %}
+{% set active = 'payroll' %}
 {% macro money(v) %}{{ "{:,.0f}".format(v or 0) }}{% endmacro %}
 {% block content %}
 <div class="tc-head">
@@ -10,10 +11,10 @@
     <h1 class="tc-h1">🔒 {{ t('hr_payroll_runs') }}</h1>
   </div>
   <div class="tc-btnbar">
-    <a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.cases') }}">← {{ t('back') }}</a>
     <a class="tc-btn tc-btn--primary" href="{{ url_for('hr.payroll_import') }}">⭱ {{ t('hr_payroll_import') }}</a>
   </div>
 </div>
+{% include 'hr/_subnav.html' %}
 
 {% if periods %}
 <div class="tc-toolbar">

@@ -28,3 +28,9 @@
   {%- set m = {'critical':'danger','warning':'warning','info':'info'} -%}
   {{ chip(s, m.get(s,'')) }}
 {%- endmacro %}
+
+{% macro avatar(name, size=36) -%}
+  {%- set parts = (name or '?').split() -%}
+  {%- set ini = ((parts[0][0] if parts else '?') ~ (parts[1][0] if parts|length > 1 else ''))|upper -%}
+  <span class="tc-ava" style="width:{{ size }}px;height:{{ size }}px;font-size:{{ (size*0.42)|int }}px">{{ ini }}</span>
+{%- endmacro %}

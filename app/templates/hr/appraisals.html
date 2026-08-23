@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import chip %}
+{% from "_macros.html" import chip, avatar %}
 {% block title %}{{ t('hr_appraisals') }}{% endblock %}
 {% set active = 'appraisals' %}
 {% set st_kind = {'Draft':'','Shared':'info','Acknowledged':'success'} %}
@@ -20,7 +20,7 @@
     <tbody>
       {% for a in items %}
       <tr onclick="location='{{ url_for('hr.appraisal_detail', aid=a['id']) }}'">
-        <td><a class="tc-idlink" href="{{ url_for('hr.appraisal_detail', aid=a['id']) }}" onclick="event.stopPropagation()">{{ a['employee_name'] }}</a></td>
+        <td><a class="tc-cellflex" href="{{ url_for('hr.appraisal_detail', aid=a['id']) }}" onclick="event.stopPropagation()" style="color:inherit">{{ avatar(a['employee_name']) }}<span style="font-weight:600">{{ a['employee_name'] }}</span></a></td>
         <td class="tc-faint">{{ a['period'] or '—' }}</td>
         <td class="tc-mono">{{ '★' * (a['rating'] or 0) }}{{ '☆' * (5-(a['rating'] or 0)) }}</td>
         <td class="tc-faint">{{ a['reviewer'] }}</td>

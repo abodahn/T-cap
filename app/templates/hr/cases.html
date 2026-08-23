@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import chip %}
+{% from "_macros.html" import chip, avatar %}
 {% block title %}{{ t('hr_requests') }}{% endblock %}
 {% set st_kind = {'Submitted':'info','In Review':'warning','More Info':'warning','Approved':'success','Completed':'success','Rejected':'danger','Cancelled':''} %}
 {% set pr_kind = {'High':'danger','Normal':'','Low':''} %}
@@ -47,7 +47,7 @@
         <td><a class="tc-idlink tc-mono" href="{{ url_for('hr.case_view', ref=c['ref']) }}" onclick="event.stopPropagation()">{{ c['ref'] }}</a></td>
         <td class="tc-faint">{{ t('hrmod_'+c['module']) }}</td>
         <td>{{ c['subject'] }}</td>
-        {% if staff %}<td class="tc-faint">{{ c['requester'] }}</td>{% endif %}
+        {% if staff %}<td><span class="tc-cellflex">{{ avatar(c['requester'], 26) }}<span class="tc-cellflex__t">{{ c['requester'] }}</span></span></td>{% endif %}
         <td>{{ chip(c['status'], st_kind.get(c['status'],'')) }}</td>
         <td>{% if c['priority']=='High' %}{{ chip(c['priority'],'danger') }}{% else %}<span class="tc-faint">{{ c['priority'] }}</span>{% endif %}</td>
         <td class="tc-mono tc-faint" style="font-size:12px">{{ (c['created_at'] or '')[:10] }}</td>

@@ -188,6 +188,14 @@
 .tc-total-row td { border-top: var(--line-strong); background: var(--surface-2);
   font-weight: 700; }
 
+/* initials avatar */
+.tc-ava { display: inline-grid; place-items: center; flex: 0 0 auto; border-radius: 50%;
+  background: linear-gradient(145deg, var(--surface-3), var(--surface-2));
+  color: var(--text); font-weight: 700; letter-spacing: .02em; border: var(--line);
+  text-transform: uppercase; line-height: 1; }
+.tc-cellflex { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tc-cellflex__t { min-width: 0; }
+
 /* HR module cards */
 .tc-modgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
 .tc-modcard { display: flex; align-items: center; gap: 14px; padding: 16px 18px;

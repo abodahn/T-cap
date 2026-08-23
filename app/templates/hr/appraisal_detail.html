@@ -1,12 +1,15 @@
 {% extends "base.html" %}
-{% from "_macros.html" import chip %}
+{% from "_macros.html" import chip, avatar %}
 {% block title %}{{ t('hr_appraisal') }} · {{ a['employee_name'] }}{% endblock %}
 {% set st_kind = {'Draft':'','Shared':'info','Acknowledged':'success'} %}
 {% block content %}
 <div class="tc-head">
-  <div class="tc-head__l">
-    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · {{ t('hr_appraisal') }}{% if a['period'] %} · {{ a['period'] }}{% endif %}</span>
-    <h1 class="tc-issue__title">{{ a['employee_name'] }}</h1>
+  <div class="tc-head__l tc-cellflex" style="gap:16px">
+    {{ avatar(a['employee_name'], 52) }}
+    <div>
+      <span class="tc-kicker"><b>04</b> · {{ t('hr_appraisal') }}{% if a['period'] %} · {{ a['period'] }}{% endif %}</span>
+      <h1 class="tc-issue__title" style="margin:2px 0">{{ a['employee_name'] }}</h1>
+    </div>
   </div>
   <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.appraisals') }}">← {{ t('back') }}</a></div>
 </div>

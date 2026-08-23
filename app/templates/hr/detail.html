@@ -1,15 +1,18 @@
 {% extends "base.html" %}
-{% from "_macros.html" import chip %}
+{% from "_macros.html" import chip, avatar %}
 {% block title %}{{ e['name_en'] or e['employee_no'] }}{% endblock %}
 {% macro prop(label, value) %}
   <div class="tc-prop"><dt>{{ label }}</dt><dd class="tc-prop__v">{{ value if (value is not none and value != '') else '—' }}</dd></div>
 {% endmacro %}
 {% block content %}
 <div class="tc-head">
-  <div class="tc-head__l">
-    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · <span class="tc-mono">{{ e['employee_no'] }}</span></span>
-    <h1 class="tc-issue__title">{{ e['name_en'] or e['name_ar'] or e['employee_no'] }}</h1>
-    {% if e['name_ar'] %}<div class="tc-faint" dir="rtl" style="font-size:15px">{{ e['name_ar'] }}</div>{% endif %}
+  <div class="tc-head__l tc-cellflex" style="gap:16px">
+    {{ avatar(e['name_en'] or e['name_ar'], 56) }}
+    <div>
+      <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · <span class="tc-mono">{{ e['employee_no'] }}</span></span>
+      <h1 class="tc-issue__title" style="margin:2px 0">{{ e['name_en'] or e['name_ar'] or e['employee_no'] }}</h1>
+      <div class="tc-faint">{{ e['job_title'] or '' }}{% if e['name_ar'] and e['name_en'] %} · <span dir="rtl">{{ e['name_ar'] }}</span>{% endif %}</div>
+    </div>
   </div>
   <div class="tc-btnbar">
     <a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.index') }}">← {{ t('back') }}</a>
