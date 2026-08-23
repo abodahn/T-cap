@@ -167,6 +167,12 @@ CREATE TABLE IF NOT EXISTS hr_case_events(
   summary TEXT, detail TEXT, created_at TEXT,
   FOREIGN KEY(case_id) REFERENCES hr_cases(id) ON DELETE CASCADE);
 
+CREATE TABLE IF NOT EXISTS payroll_runs(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, period TEXT, year TEXT, month TEXT,
+  employee_no TEXT, name TEXT, role TEXT, basic REAL, allowances REAL,
+  ot_hours REAL, ot_rate REAL, gross REAL, deductions REAL, absence_ded REAL,
+  tax_ded REAL, net REAL, status TEXT DEFAULT 'Draft', created_at TEXT, updated_at TEXT);
+
 CREATE TABLE IF NOT EXISTS assets(
   id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id TEXT UNIQUE, name TEXT,
   category TEXT, brand TEXT, model TEXT, serial TEXT, company TEXT, site TEXT,

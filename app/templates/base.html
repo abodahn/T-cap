@@ -90,6 +90,8 @@
           <div class="tc-alert tc-alert--ok"><b>{{ parts[1] }}</b> {{ t('tickets_updated') }}</div>
           {% elif m.startswith('hr_import_done:') %}{% set parts = m.split(':') %}
           <div class="tc-alert tc-alert--ok">{{ t('hr_import_result') }} — {{ t('hr_added') }}: <b>{{ parts[1] }}</b> · {{ t('hr_updated') }}: <b>{{ parts[2] }}</b> · {{ t('hr_skipped') }}: <b>{{ parts[3] }}</b></div>
+          {% elif m.startswith('hr_payroll_done:') %}{% set parts = m.split(':') %}
+          <div class="tc-alert tc-alert--ok">{{ t('hr_import_result') }} — <b>{{ parts[1] }}</b> {{ t('hr_payslips') }} · <b>{{ parts[2] }}</b> {{ t('hr_periods') }}</div>
           {% else %}<div class="tc-alert">{{ t(m) }}</div>{% endif %}
         {% endfor %}
       {% endif %}{% endwith %}

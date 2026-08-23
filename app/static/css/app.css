@@ -183,6 +183,10 @@
 .tc-pager { display: flex; align-items: center; justify-content: center; gap: 14px;
   margin-top: 16px; font-size: 13px; }
 
+/* payroll totals footer */
+.tc-total-row td { border-top: var(--line-strong); background: var(--surface-2);
+  font-weight: 700; }
+
 /* cards + table rows: subtle interaction */
 .tc-card { transition: border-color var(--transition); }
 .tc-table tbody tr { transition: background var(--transition); }

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}{{ t('hr_payroll_runs') }}{% endblock %}
+{% set st_kind = {'Draft':'','Approved':'info','Paid':'success'} %}
+{% macro money(v) %}{{ "{:,.0f}".format(v or 0) }}{% endmacro %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span>
+    <h1 class="tc-h1">🔒 {{ t('hr_payroll_runs') }}</h1>
+  </div>
+  <div class="tc-btnbar">
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.cases') }}">← {{ t('back') }}</a>
+    <a class="tc-btn tc-btn--primary" href="{{ url_for('hr.payroll_import') }}">⭱ {{ t('hr_payroll_import') }}</a>
+  </div>
+</div>
+
+{% if periods %}
+<div class="tc-toolbar">
+  <form method="get" class="tc-toolbar" style="margin:0;gap:8px">
+    <label class="tc-label" style="margin:0;align-self:center">{{ t('hr_period') }}</label>
+    <select class="tc-select" name="period" onchange="this.form.submit()">
+      {% for p in periods %}<option value="{{ p }}" {{ 'selected' if p==period }}>{{ p }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="tc-listmeta tc-faint">{{ rows|length }} {{ t('hr_employees') }} · {{ t('hr_net_total') }}: <b>{{ money(totals['net']) }}</b></div>
+
+<div class="tc-table-wrap">
+  <table class="tc-table">
+    <thead><tr>
+      <th>{{ t('hr_name') }}</th><th>{{ t('hr_role') }}</th>
+      <th class="tc-right">{{ t('hr_basic_salary') }}</th><th class="tc-right">{{ t('hr_allowances') }}</th>
+      <th class="tc-right">{{ t('hr_ot') }}</th><th class="tc-right">{{ t('hr_gross') }}</th>
+      <th class="tc-right">{{ t('hr_deductions') }}</th><th class="tc-right">{{ t('hr_net') }}</th><th>{{ t('status') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr onclick="location='{{ url_for('hr.payslip', pid=r['id']) }}'">
+        <td><a class="tc-idlink" href="{{ url_for('hr.payslip', pid=r['id']) }}" onclick="event.stopPropagation()">{{ r['name'] }}</a></td>
+        <td class="tc-faint">{{ r['role'] or '—' }}</td>
+        <td class="tc-right tc-mono">{{ money(r['basic']) }}</td>
+        <td class="tc-right tc-mono">{{ money(r['allowances']) }}</td>
+        <td class="tc-right tc-mono tc-faint">{{ "{:g}".format(r['ot_hours'] or 0) }}h</td>
+        <td class="tc-right tc-mono">{{ money(r['gross']) }}</td>
+        <td class="tc-right tc-mono">{{ money((r['deductions'] or 0)+(r['absence_ded'] or 0)+(r['tax_ded'] or 0)) }}</td>
+        <td class="tc-right tc-mono"><b>{{ money(r['net']) }}</b></td>
+        <td>{{ chip(r['status'] or 'Draft', st_kind.get(r['status'] or 'Draft','')) }}</td>
+      </tr>
+      {% else %}<tr><td colspan="9"><div class="tc-empty"><p>{{ t('no_records') }}</p></div></td></tr>{% endfor %}
+    </tbody>
+    {% if rows %}
+    <tfoot><tr class="tc-total-row">
+      <td colspan="2"><b>{{ t('hr_totals') }}</b></td>
+      <td class="tc-right tc-mono">{{ money(totals['basic']) }}</td>
+      <td class="tc-right tc-mono">{{ money(totals['allowances']) }}</td>
+      <td></td>
+      <td class="tc-right tc-mono">{{ money(totals['gross']) }}</td>
+      <td class="tc-right tc-mono">{{ money(totals['deductions']+totals['absence_ded']+totals['tax_ded']) }}</td>
+      <td class="tc-right tc-mono"><b>{{ money(totals['net']) }}</b></td>
+      <td></td>
+    </tr></tfoot>
+    {% endif %}
+  </table>
+</div>
+{% else %}
+<div class="tc-empty" style="padding:48px"><img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="">
+  <p>{{ t('hr_no_payroll') }}</p>
+  <a class="tc-btn tc-btn--primary tc-mt" href="{{ url_for('hr.payroll_import') }}">⭱ {{ t('hr_payroll_import') }}</a>
+</div>
+{% endif %}
+{% endblock %}

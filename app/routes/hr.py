@@ -40,13 +40,17 @@ CASE_PAGE = 25
 
 # Spreadsheet header (Arabic master or English) -> employees column.
 HEADER_MAP = {
-    "الكود": "employee_no", "code": "employee_no", "employee_no": "employee_no", "emp_no": "employee_no",
+    "الكود": "employee_no", "code": "employee_no", "employee_no": "employee_no", "emp_no": "employee_no", "id": "employee_no",
     "الاسم بالعربية": "name_ar", "name_ar": "name_ar", "arabic name": "name_ar",
-    "الاسم بالإنجليزية": "name_en", "name_en": "name_en", "english name": "name_en", "name": "name_en",
+    "الاسم بالإنجليزية": "name_en", "name_en": "name_en", "english name": "name_en", "name": "name_en", "الاسم": "name_en",
     "الإدارة": "department", "department": "department", "dept": "department",
     "القسم": "section", "section": "section",
     "المسمى الوظيفي": "job_title", "job_title": "job_title", "title": "job_title",
-    "الموقع": "location", "location": "location",
+    "job": "job_title", "position": "job_title", "الوظيفة": "job_title",
+    "email": "email", "e-mail": "email", "mail": "email", "البريد الإلكتروني": "email", "البريد": "email",
+    "mob": "phone", "mobile": "phone", "phone": "phone", "tel": "phone",
+    "الهاتف": "phone", "الموبايل": "phone", "الجوال": "phone",
+    "الموقع": "location", "location": "location", "address": "location", "العنوان": "location",
     "المرتب الأساسي": "basic_salary", "basic_salary": "basic_salary", "basic": "basic_salary",
     "الأجر التأميني": "insurance_wage", "insurance_wage": "insurance_wage",
     "كود البنك": "bank_code", "bank_code": "bank_code",
@@ -80,46 +84,63 @@ def _cell(v):
     return s or None
 
 
-def import_workbook(db, ws):
-    """Upsert employees from an openpyxl worksheet keyed by employee_no.
-    Returns (inserted, updated, skipped)."""
-    rows = ws.iter_rows(values_only=True)
-    header = next(rows, None) or []
-    # Map each spreadsheet column index -> our field name.
+def _map_header(row):
+    """Return {col_index: field} for a candidate header row."""
     idx = {}
-    for i, h in enumerate(header):
+    for i, h in enumerate(row):
         if h is None:
             continue
         field = HEADER_MAP.get(str(h).strip()) or HEADER_MAP.get(str(h).strip().lower())
-        if field:
+        if field and i not in idx:
             idx[i] = field
-    if "employee_no" not in idx.values():
-        raise ValueError("no_employee_code_column")
+    return idx
+
+
+def import_workbook(db, ws):
+    """Upsert employees from a worksheet. The header row is auto-detected (the
+    first row that maps to a name or code), so junk/title rows above it are
+    tolerated. Rows are keyed by employee_no when present, otherwise by name.
+    Duplicate source columns for one field keep the first non-empty value.
+    Returns (inserted, updated, skipped)."""
+    idx = None
+    data_rows = []
+    for row in ws.iter_rows(values_only=True):
+        if idx is None:
+            cand = _map_header(row)
+            if "employee_no" in cand.values() or "name_en" in cand.values():
+                idx = cand
+            continue
+        data_rows.append(row)
+    if not idx:
+        raise ValueError("no_recognisable_header")
+    key_field = "employee_no" if "employee_no" in idx.values() else "name_en"
 
     ins = upd = skip = 0
     now = utcnow()
-    for row in rows:
+    for row in data_rows:
         data = {}
         for i, field in idx.items():
             val = row[i] if i < len(row) else None
-            data[field] = _num(val) if field in _NUMERIC else _cell(val)
-        empno = data.get("employee_no")
-        if not empno:
+            val = _num(val) if field in _NUMERIC else _cell(val)
+            if val is not None and data.get(field) in (None, ""):   # first non-empty wins
+                data[field] = val
+        key = data.get(key_field)
+        if not key:
             skip += 1
             continue
-        cols = [c for c in data if c != "employee_no"]
-        existing = db.execute("SELECT id FROM employees WHERE employee_no=?", (empno,)).fetchone()
+        cols = [c for c in data if c != key_field]
+        existing = db.execute(f"SELECT id FROM employees WHERE {key_field}=?", (key,)).fetchone()
         if existing:
             if cols:
                 sets = ", ".join(f"{c}=?" for c in cols) + ", updated_at=?"
-                db.execute(f"UPDATE employees SET {sets} WHERE employee_no=?",
-                           [data[c] for c in cols] + [now, empno])
+                db.execute(f"UPDATE employees SET {sets} WHERE {key_field}=?",
+                           [data[c] for c in cols] + [now, key])
             upd += 1
         else:
-            allcols = ["employee_no"] + cols + ["created_at", "updated_at"]
+            allcols = [key_field] + cols + ["created_at", "updated_at"]
             ph = ",".join(["?"] * len(allcols))
             db.execute(f"INSERT INTO employees({','.join(allcols)}) VALUES({ph})",
-                       [empno] + [data[c] for c in cols] + [now, now])
+                       [key] + [data[c] for c in cols] + [now, now])
             ins += 1
     return ins, upd, skip
 
@@ -179,7 +200,7 @@ def import_data():
             log_audit(current_user()["username"], "hr_import", f"+{ins} ~{upd} skip{skip}")
             flash(f"hr_import_done:{ins}:{upd}:{skip}")
         except ValueError as ex:
-            flash("hr_import_no_code" if str(ex) == "no_employee_code_column" else "hr_import_error")
+            flash("hr_import_no_code" if "header" in str(ex) else "hr_import_error")
         except Exception:
             flash("hr_import_error")
         return redirect(url_for("hr.index"))
@@ -357,3 +378,129 @@ def case_action(ref):
     db.commit()
     log_audit(u["username"], f"hr_case_{a}", ref)
     return redirect(url_for("hr.case_view", ref=ref) + "#activity")
+
+
+# ===========================================================================
+#  Payroll runs — monthly per-employee payslips. Confidential: hr_manage only.
+# ===========================================================================
+
+# Payroll sheet header (EN or AR) -> payroll_runs column.
+PAYROLL_MAP = {
+    "name": "name", "الاسم": "name", "employee": "name",
+    "code": "employee_no", "الكود": "employee_no", "employee_no": "employee_no",
+    "role": "role", "job": "role", "الوظيفة": "role",
+    "year": "year", "السنة": "year", "month": "month", "الشهر": "month",
+    "basic": "basic", "الأساسي": "basic", "الأجر الأساسي": "basic",
+    "allowances": "allowances", "البدلات": "allowances",
+    "ot hrs": "ot_hours", "ot hours": "ot_hours", "overtime hrs": "ot_hours",
+    "ot rate": "ot_rate", "gross": "gross", "الإجمالي": "gross",
+    "deductions": "deductions", "الخصومات": "deductions",
+    "absence ded": "absence_ded", "tax ded": "tax_ded",
+    "net salary": "net", "net": "net", "الصافي": "net",
+    "status": "status", "الحالة": "status",
+}
+_PAY_NUM = {"basic", "allowances", "ot_hours", "ot_rate", "gross", "deductions",
+            "absence_ded", "tax_ded", "net"}
+PAYROLL_STATUSES = ["Draft", "Approved", "Paid"]
+PAY_MONEY = ["basic", "allowances", "gross", "deductions", "absence_ded", "tax_ded", "net"]
+
+
+def import_payroll(db, ws):
+    """Parse a payroll worksheet and replace the affected periods wholesale.
+    Header row is auto-detected (the row containing a 'Name'/'الاسم' cell).
+    Returns (rows_imported, [periods])."""
+    header_idx = None
+    idx = {}
+    data_rows = []
+    for row in ws.iter_rows(values_only=True):
+        if header_idx is None:
+            cells = {(str(v).strip().lower() if v is not None else "") for v in row}
+            if "name" in cells or "الاسم" in cells:
+                for i, h in enumerate(row):
+                    if h is None:
+                        continue
+                    f = PAYROLL_MAP.get(str(h).strip().lower()) or PAYROLL_MAP.get(str(h).strip())
+                    if f:
+                        idx[i] = f
+                header_idx = True
+            continue
+        data_rows.append(row)
+    if not idx or "name" not in idx.values():
+        raise ValueError("no_payroll_header")
+
+    recs = []
+    for row in data_rows:
+        rec = {}
+        for i, f in idx.items():
+            v = row[i] if i < len(row) else None
+            rec[f] = _num(v) if f in _PAY_NUM else _cell(v)
+        if not rec.get("name"):
+            continue
+        rec["period"] = f"{rec.get('year') or ''}-{rec.get('month') or ''}".strip("-") or "unspecified"
+        recs.append(rec)
+    if not recs:
+        raise ValueError("no_payroll_rows")
+
+    periods = sorted({r["period"] for r in recs})
+    now = utcnow()
+    for per in periods:                          # re-import replaces a period
+        db.execute("DELETE FROM payroll_runs WHERE period=?", (per,))
+    cols = ["period", "year", "month", "employee_no", "name", "role", "basic",
+            "allowances", "ot_hours", "ot_rate", "gross", "deductions",
+            "absence_ded", "tax_ded", "net", "status", "created_at", "updated_at"]
+    ph = ",".join(["?"] * len(cols))
+    for r in recs:
+        db.execute(f"INSERT INTO payroll_runs({','.join(cols)}) VALUES({ph})",
+                   [r.get("period"), r.get("year"), r.get("month"), r.get("employee_no"),
+                    r.get("name"), r.get("role"), r.get("basic"), r.get("allowances"),
+                    r.get("ot_hours"), r.get("ot_rate"), r.get("gross"), r.get("deductions"),
+                    r.get("absence_ded"), r.get("tax_ded"), r.get("net"),
+                    r.get("status") or "Draft", now, now])
+    return len(recs), periods
+
+
+@bp.route("/payroll")
+@permission_required("hr_manage")
+def payroll():
+    db = get_db()
+    periods = [r[0] for r in db.execute("SELECT DISTINCT period FROM payroll_runs ORDER BY period DESC").fetchall()]
+    period = request.args.get("period") or (periods[0] if periods else "")
+    rows = db.execute("SELECT * FROM payroll_runs WHERE period=? ORDER BY name", (period,)).fetchall() if period else []
+    totals = {c: sum((r[c] or 0) for r in rows) for c in PAY_MONEY}
+    return render_template("hr/payroll.html", periods=periods, period=period, rows=rows,
+                           totals=totals, money=PAY_MONEY)
+
+
+@bp.route("/payroll/<int:pid>")
+@permission_required("hr_manage")
+def payslip(pid):
+    db = get_db()
+    r = db.execute("SELECT * FROM payroll_runs WHERE id=?", (pid,)).fetchone()
+    if not r:
+        abort(404)
+    return render_template("hr/payslip.html", r=r)
+
+
+@bp.route("/payroll/import", methods=["GET", "POST"])
+@permission_required("hr_manage")
+def payroll_import():
+    if request.method == "POST":
+        f = request.files.get("file")
+        if not f or not f.filename.lower().endswith((".xlsx", ".xlsm")):
+            flash("hr_import_bad_file")
+            return redirect(url_for("hr.payroll_import"))
+        db = get_db()
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+            n, periods = import_payroll(db, wb.active)
+            db.commit()
+            log_audit(current_user()["username"], "hr_payroll_import", f"{n} rows / {','.join(periods)}")
+            flash(f"hr_payroll_done:{n}:{len(periods)}")
+            return redirect(url_for("hr.payroll", period=periods[-1] if periods else ""))
+        except ValueError as ex:
+            flash("hr_payroll_no_header" if "header" in str(ex) else "hr_payroll_empty")
+        except Exception:
+            flash("hr_import_error")
+        return redirect(url_for("hr.payroll_import"))
+    return render_template("hr/payroll_import.html")

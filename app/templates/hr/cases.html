@@ -11,6 +11,7 @@
   </div>
   <div class="tc-btnbar">
     {% if staff %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.index') }}">{{ t('hr_directory') }}</a>{% endif %}
+    {% if user_can('hr_manage') %}<a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.payroll') }}">🔒 {{ t('hr_payroll_runs') }}</a>{% endif %}
     <a class="tc-btn tc-btn--primary" href="{{ url_for('hr.case_new') }}">＋ {{ t('hr_new_request') }}</a>
   </div>
 </div>

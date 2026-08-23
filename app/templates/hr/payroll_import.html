@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_payroll_import') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span>
+    <h1 class="tc-h1">{{ t('hr_payroll_import') }}</h1>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.payroll') }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-card" style="max-width:640px">
+  <div class="tc-card__body">
+    <p class="tc-faint" style="margin-top:0">{{ t('hr_payroll_help') }}</p>
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="tc-field">
+        <label class="tc-label">{{ t('hr_import_file') }} <span class="tc-faint">(.xlsx)</span></label>
+        <input class="tc-input" type="file" name="file" accept=".xlsx,.xlsm" required>
+      </div>
+      <button class="tc-btn tc-btn--primary tc-mt">⭱ {{ t('hr_import_run') }}</button>
+    </form>
+    <div class="tc-divider"></div>
+    <p class="tc-faint" style="font-size:13px;margin-bottom:0">
+      {{ t('hr_payroll_columns') }}<br>
+      <span class="tc-mono">Name · Role · Year · Month · Basic · Allowances · OT Hrs · OT Rate · Gross · Deductions · Absence Ded · Tax Ded · Net Salary · Status</span>
+    </p>
+  </div>
+</div>
+{% endblock %}

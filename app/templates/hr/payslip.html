@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_payslip') }} · {{ r['name'] }}{% endblock %}
+{% macro money(v) %}{{ "{:,.2f}".format(v or 0) }}{% endmacro %}
+{% macro line(label, value, strong=False) %}
+  <div class="tc-prop"><dt>{{ label }}</dt><dd class="tc-prop__v tc-mono {{ 'tc-right' }}">{% if strong %}<b>{{ money(value) }}</b>{% else %}{{ money(value) }}{% endif %}</dd></div>
+{% endmacro %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · {{ t('hr_payslip') }} · <span class="tc-mono">{{ r['period'] }}</span></span>
+    <h1 class="tc-issue__title">{{ r['name'] }}</h1>
+    <div class="tc-faint">{{ r['role'] or '' }}{% if r['employee_no'] %} · {{ r['employee_no'] }}{% endif %}</div>
+  </div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.payroll', period=r['period']) }}">← {{ t('back') }}</a></div>
+</div>
+
+<div class="tc-issue">
+  <div>
+    <div class="tc-section">{{ t('hr_earnings') }}</div>
+    <dl class="tc-props">
+      {{ line(t('hr_basic_salary'), r['basic']) }}
+      {{ line(t('hr_allowances'), r['allowances']) }}
+      {{ line(t('hr_ot')+' ('+"{:g}".format(r['ot_hours'] or 0)+'h × '+"{:g}".format(r['ot_rate'] or 0)+')', (r['ot_hours'] or 0)*(r['ot_rate'] or 0)) }}
+      {{ line(t('hr_gross'), r['gross'], strong=True) }}
+    </dl>
+  </div>
+  <div>
+    <div class="tc-section">{{ t('hr_deductions') }}</div>
+    <dl class="tc-props">
+      {{ line(t('hr_general_deductions'), r['deductions']) }}
+      {{ line(t('hr_absence_ded'), r['absence_ded']) }}
+      {{ line(t('hr_tax_ded'), r['tax_ded']) }}
+      {{ line(t('hr_net'), r['net'], strong=True) }}
+    </dl>
+    <div class="tc-card tc-mt"><div class="tc-card__body" style="display:flex;justify-content:space-between;align-items:center">
+      <span class="tc-faint">{{ t('hr_net') }}</span>
+      <span class="tc-mono" style="font-size:24px;font-weight:800">{{ money(r['net']) }}</span>
+    </div></div>
+  </div>
+</div>
+{% endblock %}
