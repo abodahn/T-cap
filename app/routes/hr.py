@@ -1321,6 +1321,29 @@ def candidate_cv(cid):
                     headers={"Content-Disposition": f'inline; filename="{c["cv_filename"]}"'})
 
 
+@bp.route("/candidate/<int:cid>/hire", methods=["POST"])
+@permission_required("hr_manage")
+def candidate_hire(cid):
+    db = get_db()
+    c = db.execute("SELECT c.*, j.title AS job_title, j.department AS job_dept, j.location AS job_loc "
+                   "FROM candidates c LEFT JOIN jobs j ON j.id=c.job_id WHERE c.id=?", (cid,)).fetchone()
+    if not c:
+        abort(404)
+    # Already hired? go to the existing employee record instead of duplicating.
+    if c["hired_employee_id"]:
+        return redirect(url_for("hr.view", eid=c["hired_employee_id"]))
+    db.execute("""INSERT INTO employees(name_en,email,phone,job_title,department,location,status,hire_date,created_at,updated_at)
+                  VALUES(?,?,?,?,?,?,?,?,?,?)""",
+               (c["name"], c["email"] or "", c["phone"] or "", c["job_title"] or "",
+                c["job_dept"] or "", c["job_loc"] or "", "active", utcnow()[:10], utcnow(), utcnow()))
+    eid = db.execute("SELECT MAX(id) AS m FROM employees").fetchone()["m"]
+    db.execute("UPDATE candidates SET stage='Hired', hired_employee_id=?, updated_at=? WHERE id=?", (eid, utcnow(), cid))
+    db.commit()
+    log_audit(current_user()["username"], "hr_candidate_hire", c["name"])
+    flash("hr_hired_ok")
+    return redirect(url_for("hr.view", eid=eid))
+
+
 @bp.route("/candidate/<int:cid>/stage", methods=["POST"])
 @permission_required("hr_manage")
 def candidate_stage(cid):

@@ -212,7 +212,7 @@ CREATE TABLE IF NOT EXISTS jobs(
 CREATE TABLE IF NOT EXISTS candidates(
   id INTEGER PRIMARY KEY AUTOINCREMENT, job_id INTEGER, name TEXT, email TEXT, phone TEXT,
   source TEXT, stage TEXT DEFAULT 'Applied', notes TEXT, cv_filename TEXT, cv_mimetype TEXT,
-  cv_data TEXT, created_by INTEGER, created_at TEXT, updated_at TEXT);
+  cv_data TEXT, hired_employee_id INTEGER, created_by INTEGER, created_at TEXT, updated_at TEXT);
 CREATE TABLE IF NOT EXISTS interviews(
   id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER, round TEXT, scheduled_at TEXT,
   mode TEXT, location TEXT, interviewer TEXT, interviewer_id INTEGER,
@@ -290,6 +290,15 @@ def _migrate(conn):
                 # roll back so the following statements still run.
                 if hasattr(conn, "rollback"):
                     conn.rollback()
+    # Columns added to other tables after their first ship (existing installs).
+    for table, col, ddl in [("candidates", "hired_employee_id", "INTEGER")]:
+        try:
+            if col not in _columns(conn, table):
+                conn.execute("ALTER TABLE %s ADD COLUMN %s %s" % (table, col, ddl))
+                conn.commit()
+        except Exception:
+            if hasattr(conn, "rollback"):
+                conn.rollback()
     conn.commit()
 
 

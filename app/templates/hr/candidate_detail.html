@@ -3,6 +3,8 @@
 {% block title %}{{ c['name'] }}{% endblock %}
 {% set st_kind = {'Applied':'info','Screening':'info','Interview':'warning','Offer':'success','Hired':'success','Rejected':'danger'} %}
 {% set rec_kind = {'Strong Yes':'success','Yes':'success','No':'danger','Strong No':'danger'} %}
+{% set pipe = stages[:5] %}
+{% set ci = pipe.index(c['stage']) if c['stage'] in pipe else -1 %}
 {% macro stars(n) %}{{ '★' * (n or 0) }}{{ '☆' * (5-(n or 0)) }}{% endmacro %}
 {% block content %}
 <div class="tc-head">
@@ -11,22 +13,42 @@
     <div>
       <span class="tc-kicker"><b>04</b> · {{ t('hr_recruit') }} · {% if c['job_ref'] %}<span class="tc-mono">{{ c['job_ref'] }}</span> · {% endif %}{{ c['job_title'] or '' }}</span>
       <h1 class="tc-issue__title" style="margin:2px 0">{{ c['name'] }}</h1>
-      <div class="tc-faint">{% if c['email'] %}{{ c['email'] }}{% endif %}{% if c['phone'] %} · {{ c['phone'] }}{% endif %}</div>
+      <div class="tc-metabar" style="margin:6px 0 0">
+        {{ chip(c['stage'], st_kind.get(c['stage'],'')) }}
+        {% if avg %}<span class="tc-pill" title="{{ '%.1f'|format(avg) }}">{{ stars(avg|round|int) }} {{ '%.1f'|format(avg) }}</span>{% endif %}
+        {% if c['source'] %}<span class="tc-pill">{{ c['source'] }}</span>{% endif %}
+      </div>
     </div>
   </div>
   <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.job_view', jid=c['job_id']) }}">← {{ t('back') }}</a></div>
 </div>
 
-<div class="tc-metabar">
-  {{ chip(c['stage'], st_kind.get(c['stage'],'')) }}
-  {% if avg %}<span class="tc-pill" style="font-size:15px" title="{{ '%.1f'|format(avg) }}">{{ stars(avg|round|int) }} <span class="tc-faint">{{ '%.1f'|format(avg) }}</span></span>{% endif %}
-  {% if c['source'] %}<span class="tc-pill">{{ c['source'] }}</span>{% endif %}
-  {% if c['cv_filename'] %}<a class="tc-pill" href="{{ url_for('hr.candidate_cv', cid=c['id']) }}" target="_blank">📄 {{ t('hr_cv') }}</a>{% endif %}
+{% if c['stage'] == 'Rejected' %}
+<div class="tc-alert tc-alert--danger">✕ {{ t('hr_rejected_note') }}</div>
+{% else %}
+<div class="tc-steps">
+  {% for s in pipe %}
+  <div class="tc-step {{ 'is-done' if loop.index0 < ci else ('is-now' if loop.index0 == ci else '') }}">
+    <span class="tc-step__dot">{{ '✓' if loop.index0 < ci else loop.index }}</span>
+    <span class="tc-step__l">{{ s }}</span>
+  </div>
+  {% endfor %}
 </div>
+{% endif %}
 
 <div class="tc-issue">
   <div>
-    {% if c['notes'] %}<div class="tc-desc" style="margin-bottom:16px">{{ c['notes'] }}</div>{% endif %}
+    <!-- Contact + CV card -->
+    <div class="tc-card" style="margin-bottom:16px"><div class="tc-card__body">
+      <dl class="tc-props" style="margin:0">
+        <div class="tc-prop"><dt>{{ t('email') }}</dt><dd class="tc-prop__v">{% if c['email'] %}<a href="mailto:{{ c['email'] }}">{{ c['email'] }}</a>{% else %}—{% endif %}</dd></div>
+        <div class="tc-prop"><dt>{{ t('hr_phone') }}</dt><dd class="tc-prop__v">{{ c['phone'] or '—' }}</dd></div>
+        <div class="tc-prop"><dt>{{ t('hr_source') }}</dt><dd class="tc-prop__v">{{ c['source'] or '—' }}</dd></div>
+        <div class="tc-prop"><dt>{{ t('hr_cv') }}</dt><dd class="tc-prop__v">{% if c['cv_filename'] %}<a class="tc-idlink" href="{{ url_for('hr.candidate_cv', cid=c['id']) }}" target="_blank">📄 {{ c['cv_filename'] }}</a>{% else %}—{% endif %}</dd></div>
+        <div class="tc-prop"><dt>{{ t('created') }}</dt><dd class="tc-prop__v tc-mono tc-faint">{{ c['created_at'][:10] }}</dd></div>
+      </dl>
+      {% if c['notes'] %}<div class="tc-desc" style="margin-top:12px;padding-top:12px;border-top:var(--line)">{{ c['notes'] }}</div>{% endif %}
+    </div></div>
 
     <div class="tc-section">🗓️ {{ t('hr_interviews') }} <span class="c">{{ interviews|length }}</span></div>
     {% for iv in interviews %}
@@ -43,11 +65,10 @@
       </div>
       {% endfor %}
     </div></div>
-    {% else %}<div class="tc-faint" style="padding:8px 0">{{ t('hr_no_interviews') }}</div>{% endfor %}
+    {% else %}<div class="tc-card"><div class="tc-card__body tc-faint" style="text-align:center;padding:20px">{{ t('hr_no_interviews') }}</div></div>{% endfor %}
   </div>
 
   <div>
-    {% if my_pending %}
     {% for iv in my_pending %}
     <div class="tc-card" style="margin-bottom:14px;border-color:var(--status-warning)"><div class="tc-card__body">
       <div class="tc-section" style="margin-top:0">⭐ {{ t('hr_your_score') }} — {{ iv['round'] }}</div>
@@ -62,31 +83,43 @@
       </form>
     </div></div>
     {% endfor %}
-    {% endif %}
 
     {% if can_manage %}
     <div class="tc-card"><div class="tc-card__body">
+      <!-- Hire / employee link -->
+      {% if c['hired_employee_id'] %}
+      <a class="tc-btn tc-btn--block" href="{{ url_for('hr.view', eid=c['hired_employee_id']) }}">👤 {{ t('hr_view_employee') }}</a>
+      {% elif c['stage'] != 'Rejected' %}
+      <form method="post" action="{{ url_for('hr.candidate_hire', cid=c['id']) }}" onsubmit="return confirm('{{ t('hr_hire_confirm') }}')">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="tc-btn tc-btn--primary tc-btn--block">✓ {{ t('hr_hire') }}</button></form>
+      {% endif %}
+
+      <div class="tc-divider"></div>
       <div class="tc-section" style="margin-top:0">{{ t('status') }}</div>
       <form method="post" action="{{ url_for('hr.candidate_stage', cid=c['id']) }}">
         <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
         <select class="tc-select" name="stage" onchange="this.form.submit()" style="width:100%">
           {% for s in stages %}<option {{ 'selected' if s==c['stage'] }}>{{ s }}</option>{% endfor %}</select>
       </form>
+
       <div class="tc-divider"></div>
-      <div class="tc-section" style="margin-top:0">＋ {{ t('hr_schedule_interview') }}</div>
-      <form method="post" action="{{ url_for('hr.interview_new', cid=c['id']) }}">
-        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-        <div class="tc-field"><label class="tc-label">{{ t('hr_round') }}</label>
-          <select class="tc-select" name="round" style="width:100%">{% for r in rounds %}<option>{{ r }}</option>{% endfor %}</select></div>
-        <div class="tc-field"><label class="tc-label">{{ t('hr_when') }}</label><input class="tc-input" type="datetime-local" name="scheduled_at" style="width:100%"></div>
-        <div class="tc-field"><label class="tc-label">{{ t('hr_interviewer') }}</label>
-          <select class="tc-select" name="interviewer_id" style="width:100%"><option value="">—</option>{% for us in users %}<option value="{{ us['id'] }}">{{ us['full_name'] }}</option>{% endfor %}</select></div>
-        <div class="tc-grid-2">
-          <div class="tc-field"><label class="tc-label">{{ t('hr_mode') }}</label><select class="tc-select" name="mode" style="width:100%">{% for m in modes %}<option>{{ m }}</option>{% endfor %}</select></div>
-          <div class="tc-field"><label class="tc-label">{{ t('site') }}</label><input class="tc-input" name="location" style="width:100%"></div>
-        </div>
-        <button class="tc-btn tc-btn--primary tc-btn--block">{{ t('hr_schedule') }}</button>
-      </form>
+      <details>
+        <summary class="tc-btn tc-btn--block" style="cursor:pointer">＋ {{ t('hr_schedule_interview') }}</summary>
+        <form method="post" action="{{ url_for('hr.interview_new', cid=c['id']) }}" style="margin-top:12px">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <div class="tc-field"><label class="tc-label">{{ t('hr_round') }}</label>
+            <select class="tc-select" name="round" style="width:100%">{% for r in rounds %}<option>{{ r }}</option>{% endfor %}</select></div>
+          <div class="tc-field"><label class="tc-label">{{ t('hr_when') }}</label><input class="tc-input" type="datetime-local" name="scheduled_at" style="width:100%"></div>
+          <div class="tc-field"><label class="tc-label">{{ t('hr_interviewer') }}</label>
+            <select class="tc-select" name="interviewer_id" style="width:100%"><option value="">—</option>{% for us in users %}<option value="{{ us['id'] }}">{{ us['full_name'] }}</option>{% endfor %}</select></div>
+          <div class="tc-grid-2">
+            <div class="tc-field"><label class="tc-label">{{ t('hr_mode') }}</label><select class="tc-select" name="mode" style="width:100%">{% for m in modes %}<option>{{ m }}</option>{% endfor %}</select></div>
+            <div class="tc-field"><label class="tc-label">{{ t('site') }}</label><input class="tc-input" name="location" style="width:100%"></div>
+          </div>
+          <button class="tc-btn tc-btn--primary tc-btn--block">{{ t('hr_schedule') }}</button>
+        </form>
+      </details>
     </div></div>
     {% endif %}
   </div>

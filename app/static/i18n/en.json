@@ -490,5 +490,10 @@
   "hr_no_interviews_assigned": "You have no interviews assigned.",
   "hr_job_title_required": "Job title is required.",
   "hr_cand_name_required": "Candidate name is required.",
-  "hr_card_recruit": "Job openings, candidates and interview scoring."
+  "hr_card_recruit": "Job openings, candidates and interview scoring.",
+  "hr_hire": "Hire → create employee",
+  "hr_hire_confirm": "Create an employee record from this candidate?",
+  "hr_hired_ok": "Candidate hired — employee record created.",
+  "hr_view_employee": "View employee record",
+  "hr_rejected_note": "This candidate was rejected."
 }
