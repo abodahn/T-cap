@@ -212,6 +212,17 @@
 .tc-modcard__n { font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums;
   color: var(--text-muted); }
 
+/* recruitment pipeline (kanban) */
+.tc-pipeline { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 1fr);
+  gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.tc-pipecol { background: var(--bg-sunken); border: var(--line); border-radius: var(--radius-md); padding: 10px; }
+.tc-pipecol__h { font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-faint); display: flex; justify-content: space-between; margin-bottom: 8px; }
+.tc-pipecol__h span { color: var(--text); font-weight: 700; }
+.tc-pipecard { display: block; background: var(--surface); border: var(--line);
+  border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 8px; transition: border-color var(--transition); }
+.tc-pipecard:hover { border-color: var(--brand-silver); }
+
 /* HR org reporting tree */
 .tc-tree { list-style: none; margin: 0; padding: 0; }
 .tc-tree--root > .tc-tree__node { border-bottom: var(--line); }

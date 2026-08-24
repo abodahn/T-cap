@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}{{ t('hr_recruit') }}{% endblock %}
+{% set active = 'recruit' %}
+{% set js_kind = {'Open':'success','On Hold':'warning','Closed':''} %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }}</span><h1 class="tc-h1">🎯 {{ t('hr_recruit') }}</h1></div>
+  <div class="tc-btnbar">{% if user_can('hr_manage') %}<a class="tc-btn tc-btn--primary" href="{{ url_for('hr.job_new') }}">＋ {{ t('hr_job_new') }}</a>{% endif %}</div>
+</div>
+{% include 'hr/_subnav.html' %}
+
+{% if mine %}
+<div class="tc-card" style="margin-bottom:20px">
+  <div class="tc-card__head"><h3 style="margin:0">🗓️ {{ t('hr_my_interviews') }}</h3></div>
+  <div class="tc-table-wrap" style="border:0;border-radius:0"><table class="tc-table"><tbody>
+    {% for iv in mine %}
+    <tr onclick="location='{{ url_for('hr.candidate_view', cid=iv['cand_id']) }}'">
+      <td><b>{{ iv['cand_name'] }}</b><div class="tc-faint" style="font-size:12px">{{ iv['round'] }} · {{ iv['mode'] }}</div></td>
+      <td class="tc-faint tc-mono">{{ (iv['scheduled_at'] or '')[:16] }}</td>
+      <td style="text-align:end">{% if iv['scored'] %}{{ chip(t('hr_scored'),'success') }}{% else %}{{ chip(t('hr_needs_score'),'warning') }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody></table></div>
+</div>
+{% endif %}
+
+{% if staff %}
+<div class="tc-table-wrap">
+  <table class="tc-table">
+    <thead><tr><th>{{ t('hr_job_ref') }}</th><th>{{ t('hr_job_title') }}</th><th>{{ t('department') }}</th><th>{{ t('hr_openings') }}</th><th>{{ t('hr_candidates') }}</th><th>{{ t('status') }}</th></tr></thead>
+    <tbody>
+      {% for j in jobs %}
+      <tr onclick="location='{{ url_for('hr.job_view', jid=j['id']) }}'">
+        <td class="tc-mono"><a class="tc-idlink" href="{{ url_for('hr.job_view', jid=j['id']) }}" onclick="event.stopPropagation()">{{ j['ref'] }}</a></td>
+        <td>{{ j['title'] }}</td><td class="tc-faint">{{ j['department'] or '—' }}</td>
+        <td class="tc-mono">{{ j['openings'] }}</td><td class="tc-mono">{{ j['cand'] }}</td>
+        <td>{{ chip(j['status'], js_kind.get(j['status'],'')) }}</td>
+      </tr>
+      {% else %}<tr><td colspan="6"><div class="tc-empty"><img src="{{ url_for('static', filename='img/logo-mark.png') }}" alt=""><p>{{ t('hr_no_jobs') }}</p>{% if user_can('hr_manage') %}<a class="tc-btn tc-btn--primary tc-mt" href="{{ url_for('hr.job_new') }}">＋ {{ t('hr_job_new') }}</a>{% endif %}</div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif not mine %}
+<div class="tc-empty" style="padding:40px"><p>{{ t('hr_no_interviews_assigned') }}</p></div>
+{% endif %}
+{% endblock %}

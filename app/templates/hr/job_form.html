@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_job_new') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('mod_hr') }} · {{ t('hr_recruit') }}</span><h1 class="tc-h1">{{ t('hr_job_new') }}</h1></div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.recruit') }}">← {{ t('back') }}</a></div>
+</div>
+<div class="tc-card" style="max-width:680px"><div class="tc-card__body">
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="tc-field"><label class="tc-label">{{ t('hr_job_title') }}</label><input class="tc-input" name="title" required style="width:100%"></div>
+    <div class="tc-grid-2">
+      <div class="tc-field"><label class="tc-label">{{ t('department') }}</label><input class="tc-input" name="department" style="width:100%"></div>
+      <div class="tc-field"><label class="tc-label">{{ t('site') }}</label><input class="tc-input" name="location" style="width:100%"></div>
+    </div>
+    <div class="tc-field" style="max-width:180px"><label class="tc-label">{{ t('hr_openings') }}</label><input class="tc-input" type="number" name="openings" value="1" min="1"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('description') }}</label><textarea class="tc-textarea" name="description" rows="5" style="width:100%"></textarea></div>
+    <button class="tc-btn tc-btn--primary">{{ t('save') }}</button>
+  </form>
+</div></div>
+{% endblock %}

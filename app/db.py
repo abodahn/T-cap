@@ -205,6 +205,23 @@ CREATE TABLE IF NOT EXISTS employee_docs(
   filename TEXT, mimetype TEXT, size INTEGER, data TEXT, uploaded_by TEXT,
   created_at TEXT);
 
+CREATE TABLE IF NOT EXISTS jobs(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT UNIQUE, title TEXT, department TEXT,
+  location TEXT, description TEXT, openings INTEGER DEFAULT 1, status TEXT DEFAULT 'Open',
+  created_by INTEGER, created_at TEXT, updated_at TEXT);
+CREATE TABLE IF NOT EXISTS candidates(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, job_id INTEGER, name TEXT, email TEXT, phone TEXT,
+  source TEXT, stage TEXT DEFAULT 'Applied', notes TEXT, cv_filename TEXT, cv_mimetype TEXT,
+  cv_data TEXT, created_by INTEGER, created_at TEXT, updated_at TEXT);
+CREATE TABLE IF NOT EXISTS interviews(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER, round TEXT, scheduled_at TEXT,
+  mode TEXT, location TEXT, interviewer TEXT, interviewer_id INTEGER,
+  status TEXT DEFAULT 'Scheduled', created_by INTEGER, created_at TEXT);
+CREATE TABLE IF NOT EXISTS interview_scores(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, interview_id INTEGER, candidate_id INTEGER,
+  scorer TEXT, scorer_id INTEGER, rating INTEGER, recommendation TEXT, comments TEXT,
+  created_at TEXT, UNIQUE(interview_id, scorer_id));
+
 CREATE TABLE IF NOT EXISTS assets(
   id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id TEXT UNIQUE, name TEXT,
   category TEXT, brand TEXT, model TEXT, serial TEXT, company TEXT, site TEXT,

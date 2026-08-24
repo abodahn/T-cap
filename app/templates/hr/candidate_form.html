@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ t('hr_add_candidate') }}{% endblock %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l"><span class="tc-kicker"><b>04</b> · {{ t('hr_recruit') }} · {{ job['title'] }}</span><h1 class="tc-h1">{{ t('hr_add_candidate') }}</h1></div>
+  <div class="tc-btnbar"><a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.job_view', jid=job['id']) }}">← {{ t('back') }}</a></div>
+</div>
+<div class="tc-card" style="max-width:680px"><div class="tc-card__body">
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="tc-field"><label class="tc-label">{{ t('hr_name') }}</label><input class="tc-input" name="name" required style="width:100%"></div>
+    <div class="tc-grid-2">
+      <div class="tc-field"><label class="tc-label">{{ t('email') }}</label><input class="tc-input" type="email" name="email" style="width:100%"></div>
+      <div class="tc-field"><label class="tc-label">{{ t('hr_phone') }}</label><input class="tc-input" name="phone" style="width:100%"></div>
+    </div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_source') }} <span class="tc-faint">({{ t('optional') }})</span></label><input class="tc-input" name="source" placeholder="LinkedIn, referral…" style="width:100%"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_cv') }}</label><input class="tc-input" type="file" name="cv" accept=".pdf,.doc,.docx"></div>
+    <div class="tc-field"><label class="tc-label">{{ t('hr_status_notes') }}</label><textarea class="tc-textarea" name="notes" rows="3" style="width:100%"></textarea></div>
+    <button class="tc-btn tc-btn--primary">{{ t('save') }}</button>
+  </form>
+</div></div>
+{% endblock %}

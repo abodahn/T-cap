@@ -1161,3 +1161,241 @@ def doc_delete(did):
     db.commit()
     log_audit(current_user()["username"], "hr_doc_delete", str(did))
     return redirect(url_for("hr.view", eid=d["employee_id"]))
+
+
+# ===========================================================================
+#  Talent Acquisition (ATS): jobs -> candidates (CV) -> interviews -> scores
+# ===========================================================================
+CANDIDATE_STAGES = ["Applied", "Screening", "Interview", "Offer", "Hired", "Rejected"]
+INTERVIEW_ROUNDS = ["Phone Screen", "Technical", "HR", "Manager", "Final"]
+INTERVIEW_MODES = ["Onsite", "Video", "Phone"]
+RECOMMENDATIONS = ["Strong Yes", "Yes", "No", "Strong No"]
+
+
+def _cand_interviewers(cid):
+    return {r["interviewer_id"] for r in get_db().execute(
+        "SELECT interviewer_id FROM interviews WHERE candidate_id=? AND interviewer_id IS NOT NULL", (cid,)).fetchall()}
+
+
+def _can_view_candidate(cid):
+    if user_can("hr_view_all"):
+        return True
+    u = current_user()
+    return bool(u) and u["id"] in _cand_interviewers(cid)
+
+
+@bp.route("/recruit")
+@login_required
+def recruit():
+    db = get_db()
+    u = current_user()
+    staff = user_can("hr_view_all")
+    jobs = []
+    if staff:
+        jobs = db.execute("""SELECT j.*, (SELECT COUNT(*) FROM candidates c WHERE c.job_id=j.id) AS cand
+                             FROM jobs j ORDER BY (j.status='Open') DESC, j.created_at DESC""").fetchall()
+    # interviews assigned to me that still need my score
+    mine = db.execute("""SELECT iv.*, c.name AS cand_name, c.id AS cand_id,
+                         (SELECT COUNT(*) FROM interview_scores s WHERE s.interview_id=iv.id AND s.scorer_id=?) AS scored
+                         FROM interviews iv JOIN candidates c ON c.id=iv.candidate_id
+                         WHERE iv.interviewer_id=? ORDER BY iv.scheduled_at DESC""", (u["id"], u["id"])).fetchall()
+    return render_template("hr/recruit.html", jobs=jobs, staff=staff, mine=mine)
+
+
+@bp.route("/jobs/new", methods=["GET", "POST"])
+@permission_required("hr_manage")
+def job_new():
+    db = get_db()
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        if not title:
+            flash("hr_job_title_required")
+            return redirect(url_for("hr.job_new"))
+        ref = next_ref(db, "jobs", "ref", "JOB", year=True)
+        try:
+            openings = max(1, int(request.form.get("openings") or 1))
+        except ValueError:
+            openings = 1
+        db.execute("""INSERT INTO jobs(ref,title,department,location,description,openings,status,created_by,created_at,updated_at)
+                      VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                   (ref, title, request.form.get("department") or "", request.form.get("location") or "",
+                    (request.form.get("description") or "").strip(), openings, "Open",
+                    current_user()["id"], utcnow(), utcnow()))
+        jid = db.execute("SELECT id FROM jobs WHERE ref=?", (ref,)).fetchone()["id"]
+        db.commit()
+        log_audit(current_user()["username"], "hr_job_new", title)
+        return redirect(url_for("hr.job_view", jid=jid))
+    return render_template("hr/job_form.html")
+
+
+@bp.route("/job/<int:jid>")
+@permission_required("hr_view_all")
+def job_view(jid):
+    db = get_db()
+    job = db.execute("SELECT * FROM jobs WHERE id=?", (jid,)).fetchone()
+    if not job:
+        abort(404)
+    cands = db.execute("SELECT * FROM candidates WHERE job_id=? ORDER BY created_at DESC", (jid,)).fetchall()
+    by_stage = {s: [c for c in cands if c["stage"] == s] for s in CANDIDATE_STAGES}
+    return render_template("hr/job_detail.html", job=job, by_stage=by_stage, stages=CANDIDATE_STAGES,
+                           total=len(cands), can_manage=user_can("hr_manage"),
+                           statuses=["Open", "On Hold", "Closed"])
+
+
+@bp.route("/job/<int:jid>/status", methods=["POST"])
+@permission_required("hr_manage")
+def job_status(jid):
+    db = get_db()
+    st = request.form.get("status")
+    if st in ("Open", "On Hold", "Closed"):
+        db.execute("UPDATE jobs SET status=?, updated_at=? WHERE id=?", (st, utcnow(), jid))
+        db.commit()
+    return redirect(url_for("hr.job_view", jid=jid))
+
+
+@bp.route("/job/<int:jid>/candidate/new", methods=["GET", "POST"])
+@permission_required("hr_manage")
+def candidate_new(jid):
+    import base64
+    db = get_db()
+    job = db.execute("SELECT * FROM jobs WHERE id=?", (jid,)).fetchone()
+    if not job:
+        abort(404)
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        if not name:
+            flash("hr_cand_name_required")
+            return redirect(url_for("hr.candidate_new", jid=jid))
+        f = request.files.get("cv")
+        cv_fn = cv_mt = cv_data = None
+        if f and f.filename:
+            raw = f.read()
+            cv_fn, cv_mt, cv_data = f.filename, (f.mimetype or "application/octet-stream"), base64.b64encode(raw).decode("ascii")
+        db.execute("""INSERT INTO candidates(job_id,name,email,phone,source,stage,notes,cv_filename,cv_mimetype,cv_data,created_by,created_at,updated_at)
+                      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   (jid, name, request.form.get("email") or "", request.form.get("phone") or "",
+                    request.form.get("source") or "", "Applied", (request.form.get("notes") or "").strip(),
+                    cv_fn, cv_mt, cv_data, current_user()["id"], utcnow(), utcnow()))
+        cid = db.execute("SELECT MAX(id) AS m FROM candidates").fetchone()["m"]
+        db.commit()
+        log_audit(current_user()["username"], "hr_candidate_new", name)
+        return redirect(url_for("hr.candidate_view", cid=cid))
+    return render_template("hr/candidate_form.html", job=job)
+
+
+@bp.route("/candidate/<int:cid>")
+@login_required
+def candidate_view(cid):
+    db = get_db()
+    c = db.execute("SELECT c.*, j.title AS job_title, j.ref AS job_ref FROM candidates c "
+                   "LEFT JOIN jobs j ON j.id=c.job_id WHERE c.id=?", (cid,)).fetchone()
+    if not c:
+        abort(404)
+    if not _can_view_candidate(cid):
+        abort(403)
+    interviews = db.execute("SELECT * FROM interviews WHERE candidate_id=? ORDER BY scheduled_at", (cid,)).fetchall()
+    scores = db.execute("SELECT * FROM interview_scores WHERE candidate_id=? ORDER BY created_at", (cid,)).fetchall()
+    users = db.execute("SELECT id,full_name FROM users WHERE is_active=1 ORDER BY full_name").fetchall() if user_can("hr_manage") else []
+    avg = db.execute("SELECT AVG(rating) AS a FROM interview_scores WHERE candidate_id=?", (cid,)).fetchone()["a"]
+    me = current_user()["id"]
+    my_pending = [iv for iv in interviews if iv["interviewer_id"] == me and
+                  not db.execute("SELECT 1 FROM interview_scores WHERE interview_id=? AND scorer_id=?", (iv["id"], me)).fetchone()]
+    return render_template("hr/candidate_detail.html", c=c, interviews=interviews, scores=scores,
+                           users=users, avg=avg, stages=CANDIDATE_STAGES, rounds=INTERVIEW_ROUNDS,
+                           modes=INTERVIEW_MODES, recs=RECOMMENDATIONS, can_manage=user_can("hr_manage"),
+                           my_pending=my_pending)
+
+
+@bp.route("/candidate/<int:cid>/cv")
+@login_required
+def candidate_cv(cid):
+    import base64
+    from flask import Response
+    db = get_db()
+    c = db.execute("SELECT * FROM candidates WHERE id=?", (cid,)).fetchone()
+    if not c or not _can_view_candidate(cid):
+        abort(404 if not c else 403)
+    if not c["cv_data"]:
+        abort(404)
+    return Response(base64.b64decode(c["cv_data"]), mimetype=c["cv_mimetype"] or "application/octet-stream",
+                    headers={"Content-Disposition": f'inline; filename="{c["cv_filename"]}"'})
+
+
+@bp.route("/candidate/<int:cid>/stage", methods=["POST"])
+@permission_required("hr_manage")
+def candidate_stage(cid):
+    db = get_db()
+    st = request.form.get("stage")
+    if st in CANDIDATE_STAGES:
+        db.execute("UPDATE candidates SET stage=?, updated_at=? WHERE id=?", (st, utcnow(), cid))
+        db.commit()
+        log_audit(current_user()["username"], "hr_candidate_stage", f"{cid}->{st}")
+    return redirect(url_for("hr.candidate_view", cid=cid))
+
+
+@bp.route("/candidate/<int:cid>/interview/new", methods=["POST"])
+@permission_required("hr_manage")
+def interview_new(cid):
+    db = get_db()
+    c = db.execute("SELECT * FROM candidates WHERE id=?", (cid,)).fetchone()
+    if not c:
+        abort(404)
+    try:
+        iid_user = int(request.form.get("interviewer_id") or 0)
+    except ValueError:
+        iid_user = 0
+    iv_user = db.execute("SELECT full_name FROM users WHERE id=?", (iid_user,)).fetchone() if iid_user else None
+    when = (request.form.get("scheduled_at") or "").strip().replace("T", " ")
+    db.execute("""INSERT INTO interviews(candidate_id,round,scheduled_at,mode,location,interviewer,interviewer_id,status,created_by,created_at)
+                  VALUES(?,?,?,?,?,?,?,?,?,?)""",
+               (cid, request.form.get("round") or "Interview", when, request.form.get("mode") or "Onsite",
+                request.form.get("location") or "", iv_user["full_name"] if iv_user else "",
+                iid_user or None, "Scheduled", current_user()["id"], utcnow()))
+    iid = db.execute("SELECT MAX(id) AS m FROM interviews").fetchone()["m"]
+    # move candidate into the Interview stage if still early
+    if c["stage"] in ("Applied", "Screening"):
+        db.execute("UPDATE candidates SET stage='Interview', updated_at=? WHERE id=?", (utcnow(), cid))
+    if iid_user:
+        from app.notify import notify_user_by_id
+        notify_user_by_id(db, iid_user, f"Interview to conduct · {c['name']}",
+                          f"You're scheduled to interview {c['name']} ({when}). Please add your score afterwards.",
+                          url_for("hr.candidate_view", cid=cid))
+    db.commit()
+    log_audit(current_user()["username"], "hr_interview_new", c["name"])
+    return redirect(url_for("hr.candidate_view", cid=cid))
+
+
+@bp.route("/interview/<int:iid>/score", methods=["POST"])
+@login_required
+def interview_score(iid):
+    db = get_db()
+    iv = db.execute("SELECT * FROM interviews WHERE id=?", (iid,)).fetchone()
+    if not iv:
+        abort(404)
+    u = current_user()
+    if not (user_can("hr_manage") or iv["interviewer_id"] == u["id"]):
+        abort(403)
+    try:
+        rating = min(5, max(1, int(request.form.get("rating") or 3)))
+    except ValueError:
+        rating = 3
+    rec = request.form.get("recommendation") if request.form.get("recommendation") in RECOMMENDATIONS else "Yes"
+    comments = (request.form.get("comments") or "").strip()
+    existing = db.execute("SELECT id FROM interview_scores WHERE interview_id=? AND scorer_id=?", (iid, u["id"])).fetchone()
+    if existing:
+        db.execute("UPDATE interview_scores SET rating=?, recommendation=?, comments=?, created_at=? WHERE id=?",
+                   (rating, rec, comments, utcnow(), existing["id"]))
+    else:
+        db.execute("""INSERT INTO interview_scores(interview_id,candidate_id,scorer,scorer_id,rating,recommendation,comments,created_at)
+                      VALUES(?,?,?,?,?,?,?,?)""",
+                   (iid, iv["candidate_id"], u["full_name"], u["id"], rating, rec, comments, utcnow()))
+    db.execute("UPDATE interviews SET status='Completed' WHERE id=?", (iid,))
+    # notify HR that a score was submitted
+    from app.notify import notify_hr_staff
+    cand = db.execute("SELECT name FROM candidates WHERE id=?", (iv["candidate_id"],)).fetchone()
+    notify_hr_staff(db, f"Interview scored · {cand['name'] if cand else ''}",
+                    f"{u['full_name']} scored {cand['name'] if cand else 'a candidate'} {rating}/5 ({rec}).",
+                    url_for("hr.candidate_view", cid=iv["candidate_id"]))
+    db.commit()
+    log_audit(u["username"], "hr_interview_score", str(iid))
+    return redirect(url_for("hr.candidate_view", cid=iv["candidate_id"]))

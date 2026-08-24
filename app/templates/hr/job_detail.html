@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip, avatar %}
+{% block title %}{{ job['title'] }}{% endblock %}
+{% set st_kind = {'Applied':'info','Screening':'info','Interview':'warning','Offer':'success','Hired':'success','Rejected':'danger'} %}
+{% block content %}
+<div class="tc-head">
+  <div class="tc-head__l">
+    <span class="tc-kicker"><b>04</b> · {{ t('hr_recruit') }} · <span class="tc-mono">{{ job['ref'] }}</span></span>
+    <h1 class="tc-issue__title">{{ job['title'] }}</h1>
+    <div class="tc-faint">{{ job['department'] or '' }}{% if job['location'] %} · {{ job['location'] }}{% endif %} · {{ job['openings'] }} {{ t('hr_openings') }}</div>
+  </div>
+  <div class="tc-btnbar">
+    {% if can_manage %}
+    <form method="post" action="{{ url_for('hr.job_status', jid=job['id']) }}" style="display:inline">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <select class="tc-select" name="status" onchange="this.form.submit()" style="width:auto">
+        {% for s in statuses %}<option {{ 'selected' if s==job['status'] }}>{{ s }}</option>{% endfor %}
+      </select></form>
+    <a class="tc-btn tc-btn--primary" href="{{ url_for('hr.candidate_new', jid=job['id']) }}">＋ {{ t('hr_add_candidate') }}</a>{% endif %}
+    <a class="tc-btn tc-btn--ghost" href="{{ url_for('hr.recruit') }}">← {{ t('back') }}</a>
+  </div>
+</div>
+
+{% if job['description'] %}<div class="tc-desc" style="margin-bottom:16px">{{ job['description'] }}</div>{% endif %}
+
+<div class="tc-section">{{ t('hr_pipeline') }} <span class="c">{{ total }}</span></div>
+<div class="tc-pipeline">
+  {% for s in stages %}
+  <div class="tc-pipecol">
+    <div class="tc-pipecol__h">{{ s }} <span>{{ by_stage[s]|length }}</span></div>
+    {% for c in by_stage[s] %}
+    <a class="tc-pipecard" href="{{ url_for('hr.candidate_view', cid=c['id']) }}">
+      <span class="tc-cellflex">{{ avatar(c['name'], 26) }}<span class="tc-cellflex__t"><b style="font-size:13px">{{ c['name'] }}</b>{% if c['email'] %}<span class="tc-faint" style="font-size:11px;display:block">{{ c['email'] }}</span>{% endif %}</span></span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

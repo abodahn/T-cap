@@ -6,6 +6,7 @@
   <a class="{{ 'on' if active=='attendance' }}" href="{{ url_for('hr.attendance') }}">{{ t('hr_attendance') }}</a>
   <a class="{{ 'on' if active=='announcements' }}" href="{{ url_for('hr.announcements') }}">{{ t('hr_announcements') }}</a>
   <a class="{{ 'on' if active=='policies' }}" href="{{ url_for('hr.policies') }}">{{ t('hr_policies') }}</a>
+  <a class="{{ 'on' if active=='recruit' }}" href="{{ url_for('hr.recruit') }}">{{ t('hr_recruit') }}</a>
   {% if user_can('hr_view_all') %}
   <a class="{{ 'on' if active=='directory' }}" href="{{ url_for('hr.index') }}">{{ t('hr_directory') }}</a>
   <a class="{{ 'on' if active=='org' }}" href="{{ url_for('hr.org') }}">{{ t('hr_org') }}</a>
